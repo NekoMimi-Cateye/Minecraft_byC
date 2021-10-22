@@ -45,12 +45,12 @@ void render(void)
     glDrawBuffer(GL_FRONT);
 
     // View port
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, w, h);
 
     // Set field of view
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (double)width / height, 1.0, 100.0);
+    gluPerspective(60.0, (double)w / h, 1.0, 100.0);
 
     // Camera setting
     glMatrixMode(GL_MODELVIEW);
@@ -68,50 +68,50 @@ void render(void)
     glBegin(GL_QUADS);
         glColor3f(1, 0, 0);
         glVertex3f(1.0, 0.0, 0.0);
-        glColor3f(1, 1, 0);
+        glColor3f(1, 0, 1);
         glVertex3f(1.0, 0.0, 1.0);
-        glColor3f(0, 1, 0);
+        glColor3f(1, 1, 1);
         glVertex3f(1.0, 1.0, 1.0);
-        glColor3f(0, 1, 1);
+        glColor3f(1, 1, 0);
         glVertex3f(1.0, 1.0, 0.0);
 
-        glColor3f(0, 1, 1);
-        glVertex3f(0.0, 1.0, 0.0);
         glColor3f(0, 1, 0);
+        glVertex3f(0.0, 1.0, 0.0);
+        glColor3f(0, 1, 1);
         glVertex3f(0.0, 1.0, 1.0);
-        glColor3f(1, 1, 0);
+        glColor3f(1, 1, 1);
         glVertex3f(1.0, 1.0, 1.0);
-        glColor3f(1, 0, 0);
+        glColor3f(1, 1, 0);
         glVertex3f(1.0, 1.0, 0.0);
 
-        glColor3f(0, 1, 1);
+        glColor3f(0, 0, 1);
         glVertex3f(0.0, 0.0, 1.0);
-        glColor3f(0, 1, 0);
+        glColor3f(0, 1, 1);
         glVertex3f(0.0, 1.0, 1.0);
-        glColor3f(1, 1, 0);
+        glColor3f(1, 1, 1);
         glVertex3f(1.0, 1.0, 1.0);
-        glColor3f(1, 0, 0);
+        glColor3f(1, 0, 1);
         glVertex3f(1.0, 0.0, 1.0);
 
-        glColor3f(1, 0, 0);
+        glColor3f(0, 0, 0);
         glVertex3f(0.0, 0.0, 0.0);
-        glColor3f(1, 1, 0);
+        glColor3f(0, 0, 1);
         glVertex3f(0.0, 0.0, 1.0);
-        glColor3f(0, 1, 0);
-        glVertex3f(0.0, 1.0, 1.0);
         glColor3f(0, 1, 1);
+        glVertex3f(0.0, 1.0, 1.0);
+        glColor3f(0, 1, 0);
         glVertex3f(0.0, 1.0, 0.0);
 
-        glColor3f(0, 1, 1);
+        glColor3f(0, 0, 0);
         glVertex3f(0.0, 0.0, 0.0);
-        glColor3f(0, 1, 0);
+        glColor3f(0, 0, 1);
         glVertex3f(0.0, 0.0, 1.0);
-        glColor3f(1, 1, 0);
+        glColor3f(1, 0, 1);
         glVertex3f(1.0, 0.0, 1.0);
         glColor3f(1, 0, 0);
         glVertex3f(1.0, 0.0, 0.0);
 
-        glColor3f(0, 1, 1);
+        glColor3f(0, 0, 0);
         glVertex3f(0.0, 0.0, 0.0);
         glColor3f(0, 1, 0);
         glVertex3f(0.0, 1.0, 0.0);
