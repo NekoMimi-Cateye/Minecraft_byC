@@ -17,10 +17,7 @@ int main(int argc, char **argv)
 {
     // Initialization
     glutInit(&argc, argv);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-
     glutInitWindowSize(640, 480);
 
     // Create Window
@@ -32,17 +29,42 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboard);
     glutMouseFunc(mouse);
     glutTimerFunc(100, timer, 0);
-    glutMainLoop();
 
+    glutMainLoop();
     return(0);
 }
 
 void render(void)
 {
+    // window size
+    int w = glutGet(GLUT_WINDOW_WIDTH);
+    int h = glutGet(GLUT_WINDOW_HEIGHT);
+
     // Clear
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDrawBuffer(GL_FRONT);
+
+    // View port
+    glViewport(0, 0, width, height);
+
+    // Set field of view
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(60.0, (double)width / height, 1.0, 100.0);
+
+    // Camera setting
+    glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+    double pos_x = 3.0 * cos(rad) + 0.5;
+    double pos_y = 3.5;
+    double pos_z = 3.0 * sin(rad) + 0.5;
+    rad += M_PI / 180.0;
+
+	gluLookAt(pos_x, pos_y, pos_z, 0.5, 0.5, 0.5, 0.0, 1.0, 0.0);
 
     // Draw
+    glEnable(GL_DEPTH_TEST);
     glBegin(GL_QUADS);
         glColor3f(1, 0, 0);
         glVertex3f(1.0, 0.0, 0.0);
@@ -97,19 +119,30 @@ void render(void)
         glVertex3f(1.0, 1.0, 0.0);
         glColor3f(1, 0, 0);
         glVertex3f(1.0, 0.0, 0.0);
-
     glEnd();
 
-    // Look at
+    // write strings
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0.0, w, 0.0, h);
+    glScaled(1, -1, 1);
+    glTranslated(0, -h, 0);
     glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+    glPushMatrix();
+    glLoadIdentity();
+    glColor3f(1, 1, 1);
+    glRasterPos2i(10, 10);
+    char str[15] = "Hello, World!";
+    for(int j=0; j<15; j++)
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, str[j]);
 
-    double pos_x = 3.0 * cos(rad) + 0.5;
-    double pos_y = 3.5;
-    double pos_z = 3.0 * sin(rad) + 0.5;
-    rad += M_PI / 180.0;
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
 
-	gluLookAt(pos_x, pos_y, pos_z, 0.5, 0.5, 0.5, 0.0, 1.0, 0.0);
+    glFlush();
 
     // Update
     glutSwapBuffers();
@@ -117,11 +150,6 @@ void render(void)
 
 void reshape(int width, int height)
 {
-    glViewport(0, 0, width, height);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(60.0, (double)width / height, 1.0, 100.0);
 
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
