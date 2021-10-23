@@ -13,6 +13,10 @@ void mouse(int, int, int, int);
 
 double rad = 0.0;
 
+// 1 chunk data list
+int chunk[16][256][16];
+int map2d[16][1][16];
+
 int main(int argc, char **argv)
 {
     // Initialization
@@ -56,70 +60,79 @@ void render(void)
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-    double pos_x = 3.0 * cos(rad) + 0.5;
-    double pos_y = 3.5;
-    double pos_z = 3.0 * sin(rad) + 0.5;
-    rad += M_PI / 180.0;
+    double pos_x = 16.0 * cos(rad) + 8.0;
+    double pos_y = 296.0;
+    double pos_z = 16.0 * sin(rad) + 8.0;
+    rad += M_PI / 360.0;
 
-	gluLookAt(pos_x, pos_y, pos_z, 0.5, 0.5, 0.5, 0.0, 1.0, 0.0);
+	gluLookAt(pos_x, pos_y, pos_z, 8.0, 62.0, 8.0, 0.0, 1.0, 0.0);
 
     // Draw
-    glEnable(GL_DEPTH_TEST);
-    glBegin(GL_QUADS);
-        glColor3f(1, 0, 0);
-        glVertex3f(1.0, 0.0, 0.0);
-        glColor3f(1, 0, 1);
-        glVertex3f(1.0, 0.0, 1.0);
-        glColor3f(1, 1, 1);
-        glVertex3f(1.0, 1.0, 1.0);
-        glColor3f(1, 1, 0);
-        glVertex3f(1.0, 1.0, 0.0);
+    for (double x = 0.0; x < 16.0; x += 1.0)
+    {
+        for (double z = 0.0; z < 16.0; z += 1.0)
+        {
+            for (double y = 0.0; y < 256.0; y += 1.0)
+            {
+                glEnable(GL_DEPTH_TEST);
+                glBegin(GL_QUADS);
+                    glColor3f(1, 0, 0);
+                    glVertex3f(x+1.0, y+0.0, z+0.0);
+                    glColor3f(1, 0, 1);
+                    glVertex3f(x+1.0, y+0.0, z+1.0);
+                    glColor3f(1, 1, 1);
+                    glVertex3f(x+1.0, y+1.0, z+1.0);
+                    glColor3f(1, 1, 0);
+                    glVertex3f(x+1.0, y+1.0, z+0.0);
 
-        glColor3f(0, 1, 0);
-        glVertex3f(0.0, 1.0, 0.0);
-        glColor3f(0, 1, 1);
-        glVertex3f(0.0, 1.0, 1.0);
-        glColor3f(1, 1, 1);
-        glVertex3f(1.0, 1.0, 1.0);
-        glColor3f(1, 1, 0);
-        glVertex3f(1.0, 1.0, 0.0);
+                    glColor3f(0, 1, 0);
+                    glVertex3f(x+0.0, y+1.0, z+0.0);
+                    glColor3f(0, 1, 1);
+                    glVertex3f(x+0.0, y+1.0, z+1.0);
+                    glColor3f(1, 1, 1);
+                    glVertex3f(x+1.0, y+1.0, z+1.0);
+                    glColor3f(1, 1, 0);
+                    glVertex3f(x+1.0, y+1.0, z+0.0);
 
-        glColor3f(0, 0, 1);
-        glVertex3f(0.0, 0.0, 1.0);
-        glColor3f(0, 1, 1);
-        glVertex3f(0.0, 1.0, 1.0);
-        glColor3f(1, 1, 1);
-        glVertex3f(1.0, 1.0, 1.0);
-        glColor3f(1, 0, 1);
-        glVertex3f(1.0, 0.0, 1.0);
+                    glColor3f(0, 0, 1);
+                    glVertex3f(x+0.0, y+0.0, z+1.0);
+                    glColor3f(0, 1, 1);
+                    glVertex3f(x+0.0, y+1.0, z+1.0);
+                    glColor3f(1, 1, 1);
+                    glVertex3f(x+1.0, y+1.0, z+1.0);
+                    glColor3f(1, 0, 1);
+                    glVertex3f(x+1.0, y+0.0, z+1.0);
 
-        glColor3f(0, 0, 0);
-        glVertex3f(0.0, 0.0, 0.0);
-        glColor3f(0, 0, 1);
-        glVertex3f(0.0, 0.0, 1.0);
-        glColor3f(0, 1, 1);
-        glVertex3f(0.0, 1.0, 1.0);
-        glColor3f(0, 1, 0);
-        glVertex3f(0.0, 1.0, 0.0);
+                    glColor3f(0, 0, 0);
+                    glVertex3f(x+0.0, y+0.0, z+0.0);
+                    glColor3f(0, 0, 1);
+                    glVertex3f(x+0.0, y+0.0, z+1.0);
+                    glColor3f(0, 1, 1);
+                    glVertex3f(x+0.0, y+1.0, z+1.0);
+                    glColor3f(0, 1, 0);
+                    glVertex3f(x+0.0, y+1.0, z+0.0);
 
-        glColor3f(0, 0, 0);
-        glVertex3f(0.0, 0.0, 0.0);
-        glColor3f(0, 0, 1);
-        glVertex3f(0.0, 0.0, 1.0);
-        glColor3f(1, 0, 1);
-        glVertex3f(1.0, 0.0, 1.0);
-        glColor3f(1, 0, 0);
-        glVertex3f(1.0, 0.0, 0.0);
+                    glColor3f(0, 0, 0);
+                    glVertex3f(x+0.0, y+0.0, z+0.0);
+                    glColor3f(0, 0, 1);
+                    glVertex3f(x+0.0, y+0.0, z+1.0);
+                    glColor3f(1, 0, 1);
+                    glVertex3f(x+1.0, y+0.0, z+1.0);
+                    glColor3f(1, 0, 0);
+                    glVertex3f(x+1.0, y+0.0, z+0.0);
 
-        glColor3f(0, 0, 0);
-        glVertex3f(0.0, 0.0, 0.0);
-        glColor3f(0, 1, 0);
-        glVertex3f(0.0, 1.0, 0.0);
-        glColor3f(1, 1, 0);
-        glVertex3f(1.0, 1.0, 0.0);
-        glColor3f(1, 0, 0);
-        glVertex3f(1.0, 0.0, 0.0);
-    glEnd();
+                    glColor3f(0, 0, 0);
+                    glVertex3f(x+0.0, y+0.0, z+0.0);
+                    glColor3f(0, 1, 0);
+                    glVertex3f(x+0.0, y+1.0, z+0.0);
+                    glColor3f(1, 1, 0);
+                    glVertex3f(x+1.0, y+1.0, z+0.0);
+                    glColor3f(1, 0, 0);
+                    glVertex3f(x+1.0, y+0.0, z+0.0);
+                glEnd();
+            }
+        }
+    }
 
     // write strings
     glMatrixMode(GL_PROJECTION);
@@ -132,7 +145,7 @@ void render(void)
     glPushMatrix();
     glLoadIdentity();
     glColor3f(1, 1, 1);
-    glRasterPos2i(10, 10);
+    glRasterPos2i(32, 32);
     char str[15] = "Hello, World!";
     for(int j=0; j<15; j++)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, str[j]);
