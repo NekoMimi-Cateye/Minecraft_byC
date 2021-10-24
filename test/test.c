@@ -25,8 +25,8 @@ void mouse(int, int, int, int);
 double rad = 0.0;
 
 // 1 chunk data list
-int chunk[16][256][16];
-int map2d[25][25][16][16];
+int chunk[33][33][16][256][16];
+int map2d[33][33][16][16];
 
 // for draw fps
 struct timeval start, end;
@@ -40,8 +40,8 @@ int flag = 0;
 
 int main(int argc, char **argv)
 {
-    for (int i=0; i<25; i++)
-        for (int j=0; j<25; j++)
+    for (int i=0; i<33; i++)
+        for (int j=0; j<33; j++)
             PerlinNoize2d(map2d[i][j], i, j, 1, 0);
     // Initialization
     glutInit(&argc, argv);
@@ -50,6 +50,9 @@ int main(int argc, char **argv)
 
     // Create Window
     glutCreateWindow("Test program");
+
+    // ClearColor
+    glClearColor(0.0, 1.0, 1.0, 1.0);
 
     // Functions
     glutDisplayFunc(render);
@@ -64,7 +67,7 @@ int main(int argc, char **argv)
 
 void render(void)
 {
-    if (fps_count % 10 == 0)
+    if (fps_count % 100 == 0)
         gettimeofday(&start, NULL);
     // window size
     int w = glutGet(GLUT_WINDOW_WIDTH);
@@ -78,50 +81,44 @@ void render(void)
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-    double pos_x = 200.0;
-    double pos_y = 88.0;
-    double pos_z = 200.0;
+    double pos_x = 136.0;
+    double pos_y = 86.0;
+    double pos_z = 136.0;
     rad += M_PI / 360.0;
 
-	gluLookAt(pos_x, pos_y, pos_z, 200.0+10.0*cos(rad), 90.0, 200.0+10.0*sin(rad), 0.0, 1.0, 0.0);
+	gluLookAt(pos_x, pos_y, pos_z, 136.0+10.0*cos(rad), 86.0, 136.0+10.0*sin(rad), 0.0, 1.0, 0.0);
 
     // Draw
-    double dx, dy, dz;
-    for(int i=1; i<25; i++)
-    {
-        for(int j=1; j<25; j++)
+    glEnable(GL_DEPTH_TEST);
+    glBegin(GL_QUADS);
+        double dx, dy, dz;
+        for(int i=1; i<33; i++)
         {
-            for (int x = 0; x < 16; x++)
+            for(int j=1; j<33; j++)
             {
-                dx = (double)(x+i*16);
-                for (int z = 0; z < 16; z++)
+                for (int x = 0; x < 16; x++)
                 {
-                    dz = (double)(z+j*16);
-                    /*for (double y = 0; y < map2d[i][j][x][z]; y ++)
-                    {*/
-                        dy = (double)(map2d[i][j][x][z] - 1);
-                        glEnable(GL_DEPTH_TEST);
-                        glBegin(GL_QUADS);
+                    dx = (double)(x+i*16);
+                    for (int z = 0; z < 16; z++)
+                    {
+                        dz = (double)(z+j*16);
+                        /*for (double y = 0; y < map2d[i][j][x][z]; y ++)
+                        {*/
+                            dy = (double)(map2d[i][j][x][z] - 1);
                             // x-Higher
                             if (x == 15 || (x < 15 && map2d[i][j][x][z] != map2d[i][j][x+1][z]))
                             {
                                 glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+1.0, dz+0.0);
                             }
                             // y-Higher
                             glColor3f(0, 1, 0);
                             glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                            glColor3f(0, 1, 0);
                             glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                            glColor3f(0, 1, 0);
                             glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                            glColor3f(0, 1, 0);
                             glVertex3f(dx+1.0, dy+1.0, dz+0.0);
 
                             // z-Higher
@@ -129,11 +126,8 @@ void render(void)
                             {
                                 glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+1.0, dy+0.0, dz+1.0);
                             }
 
@@ -142,22 +136,16 @@ void render(void)
                             {
                                 glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+1.0, dz+0.0);
                             }
 
                             // y-Lower
                             glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                            glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+1.0, dy+0.0, dz+0.0);
 
                             // z-Lower
@@ -165,19 +153,16 @@ void render(void)
                             {
                                 glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
                             }
-                        glEnd();
-                    /*}*/
+                        /*}*/
+                    }
                 }
             }
         }
-    }
+    glEnd();
 
     // write strings
     glMatrixMode(GL_PROJECTION);
@@ -189,7 +174,7 @@ void render(void)
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
-    glColor3f(1, 1, 1);
+    glColor3f(0, 0, 0);
     glRasterPos2i(32, 32);
     for(int j=0; j<20; j++)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, fps_str[j]);
@@ -202,17 +187,17 @@ void render(void)
 
     // Update
     glutSwapBuffers();
-    if (fps_count % 10 == 9)
+    if (fps_count % 100 == 99)
     {
         gettimeofday(&end, NULL);
-        fps[(fps_count / 10) % 10] = 10.0 / ((end.tv_sec + end.tv_sec * 1e-6) - (start.tv_sec + start.tv_sec * 1e-6));
+        fps[(fps_count / 100) % 10] = 100.0 / ((end.tv_sec + end.tv_sec * 1e-6) - (start.tv_sec + start.tv_sec * 1e-6));
         avg_fps = 0.0;
         for(int i=0; i<10; i++)
         {
             avg_fps += fps[i];
         }
         avg_fps /= 10.0;
-        if (fps_count / 100 > 0)
+        if (fps_count / 1000 > 0)
             sprintf(fps_str, "fps: %.2lf         ", avg_fps);
     }
     fps_count ++;
@@ -226,7 +211,7 @@ void reshape(int width, int height)
     // Set field of view
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (double)width / (double)height, 1.0, 10000.0);
+    gluPerspective(60.0, (double)width / (double)height, 1.0, 100000.0);
 }
 
 void keyboard(unsigned char c, int x, int y)
