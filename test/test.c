@@ -26,7 +26,7 @@ double rad = 0.0;
 
 // 1 chunk data list
 int chunk[16][256][16];
-int map2d[16][16];
+int map2d[25][25][16][16];
 
 // for draw fps
 struct timeval start, end;
@@ -40,6 +40,9 @@ int flag = 0;
 
 int main(int argc, char **argv)
 {
+    for (int i=0; i<25; i++)
+        for (int j=0; j<25; j++)
+            PerlinNoize2d(map2d[i][j], i, j, 1, 0);
     // Initialization
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
@@ -88,20 +91,19 @@ void render(void)
     {
         for(int j=1; j<25; j++)
         {
-            PerlinNoize2d(map2d, i, j, 1, 0);
             for (int x = 0; x < 16; x++)
             {
                 dx = (double)(x+i*16);
                 for (int z = 0; z < 16; z++)
                 {
                     dz = (double)(z+j*16);
-                    /*for (double y = 0; y < map2d[x][z]; y ++)
+                    /*for (double y = 0; y < map2d[i][j][x][z]; y ++)
                     {*/
-                        dy = (double)(map2d[x][z] - 1);
+                        dy = (double)(map2d[i][j][x][z] - 1);
                         glEnable(GL_DEPTH_TEST);
                         glBegin(GL_QUADS);
                             // x-Higher
-                            if (x == 15 || (x < 15 && map2d[x][z] == map2d[x+1][z]))
+                            if (x == 15 || (x < 15 && map2d[i][j][x][z] != map2d[i][j][x+1][z]))
                             {
                                 glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
@@ -123,7 +125,7 @@ void render(void)
                             glVertex3f(dx+1.0, dy+1.0, dz+0.0);
 
                             // z-Higher
-                            if (z == 15 || (z < 15 && map2d[x][z] == map2d[x][z+1]))
+                            if (z == 15 || (z < 15 && map2d[i][j][x][z] != map2d[i][j][x][z+1]))
                             {
                                 glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
@@ -136,7 +138,7 @@ void render(void)
                             }
 
                             // x-Lower
-                            if (x == 0 || (x > 0 && map2d[x][z] == map2d[x-1][z]))
+                            if (x == 0 || (x > 0 && map2d[i][j][x][z] != map2d[i][j][x-1][z]))
                             {
                                 glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
@@ -159,7 +161,7 @@ void render(void)
                             glVertex3f(dx+1.0, dy+0.0, dz+0.0);
 
                             // z-Lower
-                            if (z == 0 || (z > 0 && map2d[x][z] == map2d[x][z-1]))
+                            if (z == 0 || (z > 0 && map2d[i][j][x][z] != map2d[i][j][x][z-1]))
                             {
                                 glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
