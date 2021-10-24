@@ -31,8 +31,6 @@ int flag = 0;
 
 int main(int argc, char **argv)
 {
-    // load map
-
     // Initialization
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
@@ -74,18 +72,18 @@ void render(void)
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-    double pos_x = 96.0 * cos(rad) + 192.0;
-    double pos_y = 100.0;
-    double pos_z = 96.0 * sin(rad) + 192.0;
+    double pos_x = 200.0;
+    double pos_y = 90.0;
+    double pos_z = 200.0;
     rad += M_PI / 360.0;
 
-	gluLookAt(pos_x, pos_y, pos_z, 192.0, 80.0, 192.0, 0.0, 1.0, 0.0);
+	gluLookAt(pos_x, pos_y, pos_z, 200.0+200*cos(rad), 90.0, 200.0+200*sin(rad), 0.0, 1.0, 0.0);
 
     // Draw
     double dx, dy, dz;
-    for(int i=8; i<16; i++)
+    for(int i=1; i<25; i++)
     {
-        for(int j=8; j<16; j++)
+        for(int j=1; j<25; j++)
         {
             PerlinNoize2d(map2d, i, j, 1, 0);
             for (int x = 0; x < 16; x++)
@@ -99,15 +97,19 @@ void render(void)
                         dy = (double)(map2d[x][z] - 1);
                         glEnable(GL_DEPTH_TEST);
                         glBegin(GL_QUADS);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-
+                            // x-Higher
+                            if (x == 15 || (x < 15 && map2d[x][z] == map2d[x+1][z]))
+                            {
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                            }
+                            // y-Higher
                             glColor3f(0, 1, 0);
                             glVertex3f(dx+0.0, dy+1.0, dz+0.0);
                             glColor3f(0, 1, 0);
@@ -117,24 +119,33 @@ void render(void)
                             glColor3f(0, 1, 0);
                             glVertex3f(dx+1.0, dy+1.0, dz+0.0);
 
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                            // z-Higher
+                            if (z == 15 || (z < 15 && map2d[x][z] == map2d[x][z+1]))
+                            {
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                            }
 
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                            // x-Lower
+                            if (x == 0 || (x > 0 && map2d[x][z] == map2d[x-1][z]))
+                            {
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                            }
 
+                            // y-Lower
                             glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+0.0, dy+0.0, dz+0.0);
                             glColor3f(0.64, 0.41, 0.25);
@@ -144,14 +155,18 @@ void render(void)
                             glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+1.0, dy+0.0, dz+0.0);
 
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                            glColor3f(0.64, 0.41, 0.25);
-                            glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                            // z-Lower
+                            if (z == 0 || (z > 0 && map2d[x][z] == map2d[x][z-1]))
+                            {
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                glColor3f(0.64, 0.41, 0.25);
+                                glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                            }
                         glEnd();
                     /*}*/
                 }
