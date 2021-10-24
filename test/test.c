@@ -3,6 +3,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
+#include<sys/time.h>
 #include<math.h>
 
 // Wavelet
@@ -20,11 +21,19 @@ void timer(int);
 void keyboard(unsigned char, int, int);
 void mouse(int, int, int, int);
 
+// for develop: rotate camera
 double rad = 0.0;
 
 // 1 chunk data list
 int chunk[16][256][16];
 int map2d[16][16];
+
+// for draw fps
+struct timeval start, end;
+double fps[10] = {0};
+double avg_fps;
+char fps_str[20] = "fps: calcutating...";
+int fps_count = 0;
 
 // for debug
 int flag = 0;
@@ -52,6 +61,8 @@ int main(int argc, char **argv)
 
 void render(void)
 {
+    if (fps_count % 10 == 0)
+        gettimeofday(&start, NULL);
     // window size
     int w = glutGet(GLUT_WINDOW_WIDTH);
     int h = glutGet(GLUT_WINDOW_HEIGHT);
@@ -60,24 +71,16 @@ void render(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawBuffer(GL_FRONT);
 
-    // View port
-    glViewport(0, 0, w, h);
-
-    // Set field of view
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(60.0, (double)w / h, 1.0, 10000000.0);
-
     // Camera setting
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
     double pos_x = 200.0;
-    double pos_y = 90.0;
+    double pos_y = 88.0;
     double pos_z = 200.0;
     rad += M_PI / 360.0;
 
-	gluLookAt(pos_x, pos_y, pos_z, 200.0+200*cos(rad), 90.0, 200.0+200*sin(rad), 0.0, 1.0, 0.0);
+	gluLookAt(pos_x, pos_y, pos_z, 200.0+10.0*cos(rad), 90.0, 200.0+10.0*sin(rad), 0.0, 1.0, 0.0);
 
     // Draw
     double dx, dy, dz;
@@ -100,13 +103,13 @@ void render(void)
                             // x-Higher
                             if (x == 15 || (x < 15 && map2d[x][z] == map2d[x+1][z]))
                             {
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+1.0, dz+0.0);
                             }
                             // y-Higher
@@ -122,26 +125,26 @@ void render(void)
                             // z-Higher
                             if (z == 15 || (z < 15 && map2d[x][z] == map2d[x][z+1]))
                             {
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+1.0, dy+0.0, dz+1.0);
                             }
 
                             // x-Lower
                             if (x == 0 || (x > 0 && map2d[x][z] == map2d[x-1][z]))
                             {
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+1.0, dz+0.0);
                             }
 
@@ -158,13 +161,13 @@ void render(void)
                             // z-Lower
                             if (z == 0 || (z > 0 && map2d[x][z] == map2d[x][z-1]))
                             {
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                                glColor3f(0.64, 0.41, 0.25);
+                                glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
                             }
                         glEnd();
@@ -186,10 +189,8 @@ void render(void)
     glLoadIdentity();
     glColor3f(1, 1, 1);
     glRasterPos2i(32, 32);
-    char str[15] = "Hello, World!";
-    for(int j=0; j<15; j++)
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, str[j]);
-
+    for(int j=0; j<20; j++)
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, fps_str[j]);
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -199,20 +200,31 @@ void render(void)
 
     // Update
     glutSwapBuffers();
+    if (fps_count % 10 == 9)
+    {
+        gettimeofday(&end, NULL);
+        fps[(fps_count / 10) % 10] = 10.0 / ((end.tv_sec + end.tv_sec * 1e-6) - (start.tv_sec + start.tv_sec * 1e-6));
+        avg_fps = 0.0;
+        for(int i=0; i<10; i++)
+        {
+            avg_fps += fps[i];
+        }
+        avg_fps /= 10.0;
+        if (fps_count / 100 > 0)
+            sprintf(fps_str, "fps: %.2lf         ", avg_fps);
+    }
+    fps_count ++;
 }
 
 void reshape(int width, int height)
 {
+    // View port
+    glViewport(0, 0, width, height);
 
-    glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-    double pos_x = 3.0 * cos(rad);
-    double pos_y = 3.0;
-    double pos_z = 3.0 * sin(rad);
-    rad += M_PI / 180.0;
-
-	gluLookAt(pos_x, pos_y, pos_z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    // Set field of view
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(60.0, (double)width / (double)height, 1.0, 10000.0);
 }
 
 void keyboard(unsigned char c, int x, int y)
@@ -309,15 +321,8 @@ void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_see
             W[x][z][1] = a[noizeport_x][noizeport_z+1][0] * dx + a[noizeport_x][noizeport_z+1][1] * (dz-1.0) * C[x+128][z];
             W[x][z][2] = a[noizeport_x+1][noizeport_z][0] * (dx-1.0) + a[noizeport_x+1][noizeport_z][1] * dz * C[x][z+128];
             W[x][z][3] = a[noizeport_x+1][noizeport_z+1][0] * (dx-1.0) + a[noizeport_x+1][noizeport_z+1][1] * (dz-1.0) * C[x][z];
-            if(flag < 2)
-                printf("%lf  ", C[x][z]);
         }
-        if(flag < 2)
-            printf("\n");
     }
-    if(flag < 2)
-        printf("------------------------------");
-    fflush(stdout);
 
     for(int x=0; x<128; x++)
     {
@@ -340,16 +345,8 @@ void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_see
             zp = 16 * mod_chunk_zpos + z;
             //marge (way: x)
             data[x][z] = 80 + lround(Wp[xp][zp][0] + dx * (Wp[xp][zp][1] - Wp[xp][zp][0]));
-            if(flag < 2)
-                printf("%d  ", data[x][z]);
         }
-        if(flag < 2)
-            printf("\n");
     }
-    if(flag < 2)
-        printf("------------------------------");
-    fflush(stdout);
-    flag ++;
 }
 
 void PerlinNoize3d(int data[16][256][16], int x_length, int y_length, int z_length, int use_seed, unsigned int seed)
