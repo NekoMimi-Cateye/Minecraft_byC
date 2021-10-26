@@ -35,6 +35,10 @@ int player_block_x = 136;
 int player_block_y = 86;
 int player_block_z = 136;
 
+int player_pre_loadchunk_x = 0;
+int player_pre_loadchunk_z = 0;
+int player_pre_chunk_x = 8;
+int player_pre_chunk_z = 8;
 int player_chunk_x = 8;
 int player_chunk_y = 5;
 int player_chunk_z = 8;
@@ -71,11 +75,13 @@ double avg_fps;
 char fps_str[20] = "fps: calcutating...";
 int fps_count = 0;
 
-// for draw pos
+// for draw info
 char pos_str[40];
 char block_str[40];
 char chunk_str[40];
 char keystate_str[60];
+char loadpos_str[60];
+char loadposc_str[60];
 
 // for debug
 int flag = 0;
@@ -87,7 +93,6 @@ int main(int argc, char **argv)
         for (int j=0; j<33; j++)
         {
             PerlinNoize2d(map2d[i][j], i, j, 1, 0);
-            // PerlinNoize3d(chunk[i][j], i, j, 1, 0);
         }
     }
     player_y = (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5;
@@ -122,7 +127,7 @@ void render(void)
 {
     double speed = 0.21;
     double sneek_speed = 0.304;
-    double dash_speed = 1.3;
+    double dash_speed = 2.0;
     double next_player_x=player_x, next_player_z=player_z;
     int next_player_block_x, next_player_block_z;
     int next_player_chunk_x, next_player_chunk_z;
@@ -160,7 +165,7 @@ void render(void)
     next_player_block_x = (int)next_player_x;
     next_player_chunk_x = (int)next_player_block_x / 16;
     next_player_local_x = (int)next_player_block_x % 16;
-    if(player_y >= (double)map2d[next_player_chunk_x][player_chunk_z][next_player_local_x][player_local_z] + 1.5)
+    if(player_y >= (double)map2d[next_player_chunk_x-player_pre_loadchunk_x][player_chunk_z-player_pre_loadchunk_z][next_player_local_x][player_local_z] + 1.5 && next_player_x > 16.0 && next_player_x < 880.0)
     {
         player_x = next_player_x;
         player_block_x = next_player_block_x;
@@ -171,12 +176,34 @@ void render(void)
     next_player_block_z = (int)next_player_z;
     next_player_chunk_z = (int)next_player_block_z / 16;
     next_player_local_z = (int)next_player_block_z % 16;
-    if(player_y >= (double)map2d[player_chunk_x][next_player_chunk_z][player_local_x][next_player_local_z] + 1.5)
+    if(player_y >= (double)map2d[player_chunk_x-player_pre_loadchunk_x][next_player_chunk_z-player_pre_loadchunk_z][player_local_x][next_player_local_z] + 1.5 && next_player_z > 16.0 && next_player_z < 880.0)
     {
         player_z = next_player_z;
         player_block_z = next_player_block_z;
         player_chunk_z = next_player_chunk_z;
         player_local_z = next_player_local_z;
+    }
+    if (player_chunk_x - player_pre_chunk_x > 8 || player_chunk_x - player_pre_chunk_x < -8 || player_chunk_z - player_pre_chunk_z > 8 || player_chunk_z - player_pre_chunk_z < -8)
+    {
+        player_pre_chunk_x = player_chunk_x;
+        player_pre_loadchunk_x = player_pre_chunk_x - 16;
+        if (player_pre_loadchunk_x < 0)
+            player_pre_loadchunk_x = 0;
+        if (player_pre_loadchunk_x > 23)
+            player_pre_loadchunk_x = 23;
+        player_pre_chunk_z = player_chunk_z;
+        player_pre_loadchunk_z = player_pre_chunk_z - 16;
+        if (player_pre_loadchunk_z < 0)
+            player_pre_loadchunk_z = 0;
+        if (player_pre_loadchunk_z > 23)
+            player_pre_loadchunk_z = 23;
+        for (int i=0; i<33; i++)
+        {
+            for (int j=0; j<33; j++)
+            {
+                PerlinNoize2d(map2d[i][j], player_pre_loadchunk_x+i, player_pre_loadchunk_z+j, 1, 0);
+            }
+        }
     }
 
     if (fps_count % 100 == 0)
@@ -190,7 +217,7 @@ void render(void)
     mouse_y = h / 2;
 
     // y position process
-    if (player_fall_tick == -1 && player_jump_tick == -1 && player_y > (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5)
+    if (player_fall_tick == -1 && player_jump_tick == -1 && player_y > (double)map2d[player_chunk_x-player_pre_loadchunk_x][player_chunk_z-player_pre_loadchunk_z][player_local_x][player_local_z] + 1.5)
         player_fall_tick = 0;
 
     if (player_fall_tick >= 0 && player_fall_tick % 3 == 0)
@@ -198,9 +225,9 @@ void render(void)
         player_fall_velocity = JumpVelocity(0.0, player_gravity_acceleration, player_air_resistance, player_fall_tick / 3);
         player_y += player_fall_velocity;
         player_block_y = (int)(player_y - 1.5);
-        if (player_y < (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5)
+        if (player_y < (double)map2d[player_chunk_x-player_pre_loadchunk_x][player_chunk_z-player_pre_loadchunk_z][player_local_x][player_local_z] + 1.5)
         {
-            player_y = (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5;
+            player_y = (double)map2d[player_chunk_x-player_pre_loadchunk_x][player_chunk_z-player_pre_loadchunk_z][player_local_x][player_local_z] + 1.5;
             player_block_y = (int)(player_y - 1.5);
             player_chunk_y = player_block_y / 16;
             player_local_y = player_block_y % 16;
@@ -216,9 +243,9 @@ void render(void)
         player_jump_velocity = JumpVelocity(player_jump_start_velocity, player_gravity_acceleration, player_air_resistance, player_jump_tick / 3);
         player_y += player_jump_velocity;
         player_block_y = (int)(player_y - 1.5);
-        if (player_y < (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5)
+        if (player_y < (double)map2d[player_chunk_x-player_pre_loadchunk_x][player_chunk_z-player_pre_loadchunk_z][player_local_x][player_local_z] + 1.5)
         {
-            player_y = (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5;
+            player_y = (double)map2d[player_chunk_x-player_pre_loadchunk_x][player_chunk_z-player_pre_loadchunk_z][player_local_x][player_local_z] + 1.5;
             player_block_y = (int)(player_y - 1.5);
             player_chunk_y = player_block_y / 16;
             player_local_y = player_block_y % 16;
@@ -241,16 +268,16 @@ void render(void)
     glEnable(GL_DEPTH_TEST);
     glBegin(GL_QUADS);
         double dx, dy, dz;
-        for(int i=1; i<17; i++)
+        for(int i=0; i<33; i++)
         {
-            for(int j=1; j<17; j++)
+            for(int j=0; j<33; j++)
             {
                 for (int x = 0; x < 16; x++)
                 {
-                    dx = (double)(x+i*16);
+                    dx = (double)(x+(player_pre_loadchunk_x+i)*16);
                     for (int z = 0; z < 16; z++)
                     {
-                        dz = (double)(z+j*16);
+                        dz = (double)(z+(player_pre_loadchunk_z+j)*16);
                         /*for (double y = 0; y < map2d[i][j][x][z]; y ++)
                         {*/
                             dy = (double)(map2d[i][j][x][z] - 1);
@@ -259,24 +286,46 @@ void render(void)
                             {
                                 glColor3f(0.66, 0.43, 0.18);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                glColor3f(0.59, 0.39, 0.16);
                                 glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                glColor3f(0.53, 0.34, 0.14);
                                 glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                glColor3f(0.59, 0.39, 0.16);
                                 glVertex3f(dx+1.0, dy+1.0, dz+0.0);
                             }
                             // y-Higher
-                            glColor3f(0, 1, 0);
-                            glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                            glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-
+                            if (player_pre_loadchunk_x+i > 0 && player_pre_loadchunk_z+j > 0 && player_pre_loadchunk_x+i < 55 && player_pre_loadchunk_z+j && 55)
+                            {
+                                glColor3f(0, 1, 0);
+                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                glColor3f(0, 0.9, 0);
+                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                glColor3f(0, 0.8, 0);
+                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                glColor3f(0, 0.9, 0);
+                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                            }
+                            else
+                            {
+                                glColor3f(0, 1, 0.5);
+                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                glColor3f(0, 0.9, 0.45);
+                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                glColor3f(0, 0.8, 0.4);
+                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                glColor3f(0, 0.9, 0.45);
+                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                            }
                             // z-Higher
                             if (z == 15 || (z < 15 && map2d[i][j][x][z] != map2d[i][j][x][z+1]))
                             {
                                 glColor3f(0.48, 0.34, 0.14);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                glColor3f(0.43, 0.31, 0.13);
                                 glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                glColor3f(0.38, 0.27, 0.11);
                                 glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                glColor3f(0.43, 0.31, 0.13);
                                 glVertex3f(dx+1.0, dy+0.0, dz+1.0);
                             }
 
@@ -285,16 +334,22 @@ void render(void)
                             {
                                 glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                glColor3f(0.31, 0.2, 0.08);
                                 glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                glColor3f(0.27, 0.18, 0.07);
                                 glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                glColor3f(0.31, 0.2, 0.08);
                                 glVertex3f(dx+0.0, dy+1.0, dz+0.0);
                             }
 
                             // y-Lower
                             glColor3f(0.64, 0.41, 0.25);
                             glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                            glColor3f(0.58, 0.37, 0.22);
                             glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                            glColor3f(0.51, 0.33, 0.2);
                             glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                            glColor3f(0.58, 0.37, 0.22);
                             glVertex3f(dx+1.0, dy+0.0, dz+0.0);
 
                             // z-Lower
@@ -302,8 +357,11 @@ void render(void)
                             {
                                 glColor3f(0.42, 0.27, 0.11);
                                 glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                glColor3f(0.38, 0.24, 0.1);
                                 glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                glColor3f(0.34, 0.22, 0.09);
                                 glVertex3f(dx+1.0, dy+0.0, dz+0.0);
                             }
                         /*}*/
@@ -312,104 +370,6 @@ void render(void)
             }
         }
     glEnd();
-    glLineWidth(1.0);
-    glBegin(GL_LINES);
-        for(int i=1; i<17; i++)
-        {
-            for(int j=1; j<17; j++)
-            {
-                for (int x = 0; x < 16; x++)
-                {
-                    dx = (double)(x+i*16);
-                    for (int z = 0; z < 16; z++)
-                    {
-                        dz = (double)(z+j*16);
-                        /*for (double y = 0; y < map2d[i][j][x][z]; y ++)
-                        {*/
-                            dy = (double)(map2d[i][j][x][z] - 1);
-                            // x-Higher
-                            if (x == 15 || (x < 15 && map2d[i][j][x][z] != map2d[i][j][x+1][z]))
-                            {
-                                glColor3f(0, 0, 0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                            }
-                            // y-Higher
-                            glColor3f(0, 0.5, 0);
-                            glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                            glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                            glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                            glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                            glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-
-                            // z-Higher
-                            if (z == 15 || (z < 15 && map2d[i][j][x][z] != map2d[i][j][x][z+1]))
-                            {
-                                glColor3f(0, 0, 0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                            }
-
-                            // x-Lower
-                            if (x == 0 || (x > 0 && map2d[i][j][x][z] != map2d[i][j][x-1][z]))
-                            {
-                                glColor3f(0, 0, 0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+1.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                            }
-
-                            // y-Lower
-                            glColor3f(0, 0, 0);
-                            glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                            glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                            glVertex3f(dx+0.0, dy+0.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+0.0, dz+1.0);
-                            glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                            glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                            glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-
-                            // z-Lower
-                            if (z == 0 || (z > 0 && map2d[i][j][x][z] != map2d[i][j][x][z-1]))
-                            {
-                                glColor3f(0, 0, 0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+0.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+1.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                                glVertex3f(dx+1.0, dy+0.0, dz+0.0);
-                                glVertex3f(dx+0.0, dy+0.0, dz+0.0);
-                            }
-                        /*}*/
-                    }
-                }
-            }
-        }
-    glEnd();
-
     // write strings
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -452,6 +412,12 @@ void render(void)
     glRasterPos2i(0, 16*13);
     for(int j=0; j<60; j++)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, keystate_str[j]);
+    glRasterPos2i(0, 16*14);
+    for(int j=0; j<60; j++)
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, loadpos_str[j]);
+    glRasterPos2i(0, 16*15);
+    for(int j=0; j<60; j++)
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, loadposc_str[j]);
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -478,7 +444,9 @@ void render(void)
     sprintf(pos_str,   "XYZ: %.2lf %.2lf %.2lf", player_x, player_y, player_z);
     sprintf(block_str, "BLOCK: %d %d %d", player_block_x, player_block_y, player_block_z);
     sprintf(chunk_str, "CHUNK: %d %d %d in %d %d %d", player_local_x, player_local_y, player_local_z, player_chunk_x, player_chunk_y, player_chunk_z);
-    sprintf(keystate_str, "FRONT: %d BACK: %d LEFT: %d RIGHT: %d SNEEK: %d DASH: %d JUMP:%d", key_state[0], key_state[1], key_state[2], key_state[3], key_state[4], key_state[5], key_state[6]);
+    sprintf(keystate_str, "F:%d B:%d L:%d R:%d SLOW:%d FAST:%d JUMP:%d", key_state[0], key_state[1], key_state[2], key_state[3], key_state[4], key_state[5], key_state[6]);
+    sprintf(loadposc_str, "LOAD CHUNK(PLAYER): %d %d", player_pre_chunk_x, player_pre_chunk_z);
+    sprintf(loadpos_str, "LOAD CHUNK(START): %d %d", player_pre_loadchunk_x, player_pre_loadchunk_z);
 }
 
 void reshape(int width, int height)
@@ -494,7 +462,6 @@ void reshape(int width, int height)
 
 void keyboard(unsigned char c, int x, int y)
 {
-    printf("DW %d\n", c);
     int a = glutGetModifiers();
     if ((a & GLUT_ACTIVE_SHIFT) != 0) 
         key_state[4] = 1;
@@ -520,7 +487,6 @@ void keyboard(unsigned char c, int x, int y)
 
 void keyboardup(unsigned char c, int x, int y)
 {
-    printf("UP %d\n", c);
     int a = glutGetModifiers();
     if ((a & GLUT_ACTIVE_SHIFT) != 0) 
         key_state[4] = 1;
@@ -546,8 +512,6 @@ void keyboardup(unsigned char c, int x, int y)
 
 void special(int c, int x, int y)
 {
-    printf("special:: %d\n", c);
-    fflush(stdout);
 }
 
 
@@ -641,12 +605,12 @@ void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_see
     double C[256][256];                     // Wavelet data
     double W[128][128][4];                  // Graph data for marge
     double Wp[128][128][2];                 // Graph data (marge z)
-    double a[7][7][2];                      // Gradient data
+    double a[8][8][2];                      // Gradient data
 
     double dx, dz;
 
     // Wavelet function
-    Wavelet2d(C, 48.0);
+    Wavelet2d(C, 100.0);
 
     // set seed value
     if (use_seed == 1)
@@ -655,9 +619,9 @@ void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_see
         srand((unsigned int)time(NULL));
 
     // set random gradient
-    for(int i=0; i<7; i++)
+    for(int i=0; i<8; i++)
     {
-        for(int j=0; j<7; j++)
+        for(int j=0; j<8; j++)
         {
             a[i][j][0] = (double)rand() / RAND_MAX;
             a[i][j][1] = (double)rand() / RAND_MAX;
@@ -716,7 +680,7 @@ void PerlinNoize3d(int data[16][256][16], int chunk_xpos, int chunk_zpos, int us
     double Wp0[128][128][128][4];       // Graph data (marge z)
     double Wp1[128][128][128][2];       // Graph data (marge z)
     double Wm[128][128][128];           // Graph data (marge z)
-    double a[7][2][7][3];               // Gradient data
+    double a[8][2][8][3];               // Gradient data
 
     double dx, dy, dz;
 
@@ -730,11 +694,11 @@ void PerlinNoize3d(int data[16][256][16], int chunk_xpos, int chunk_zpos, int us
         srand((unsigned int)time(NULL));
 
     // set random gradient
-    for(int i=0; i<7; i++)
+    for(int i=0; i<8; i++)
     {
         for(int j=0; j<2; j++)
         {
-            for(int k=0; k<7; k++)
+            for(int k=0; k<8; k++)
             {
                 a[i][j][k][0] = (double)rand() / RAND_MAX;
                 a[i][j][k][1] = (double)rand() / RAND_MAX;
