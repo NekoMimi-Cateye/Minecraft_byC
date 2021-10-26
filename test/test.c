@@ -26,6 +26,7 @@ void keyboardup(unsigned char, int, int);
 void mouse(int, int, int, int);
 void motion(int, int);
 void special(int, int, int);
+void specialup(int, int, int);
 
 // player info
 double player_x = 136.0;
@@ -75,6 +76,9 @@ double avg_fps;
 char fps_str[20] = "fps: calcutating...";
 int fps_count = 0;
 
+// camera mode
+int camera_perspective_mode = 0;
+
 // for draw info
 char pos_str[40];
 char block_str[40];
@@ -115,6 +119,7 @@ int main(int argc, char **argv)
     glutKeyboardUpFunc(keyboardup);
     //glutIgnoreKeyRepeat(GL_TRUE);
     glutSpecialFunc(special);
+    glutSpecialUpFunc(specialup);
     glutMouseFunc(mouse);
     glutPassiveMotionFunc(motion);
     glutTimerFunc(100, timer, 0);
@@ -262,11 +267,306 @@ void render(void)
     // Camera setting
     glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(player_x, player_y, player_z, player_x+10.0*cos(xz_rad)*cos(y_rad), player_y-10.0*sin(y_rad), player_z+10.0*sin(xz_rad)*cos(y_rad), 0.0, 1.0, 0.0);
+    if (camera_perspective_mode == 0)
+    	gluLookAt(player_x, player_y, player_z, player_x+5.0*cos(xz_rad)*cos(y_rad), player_y-5.0*sin(y_rad), player_z+5.0*sin(xz_rad)*cos(y_rad), 0.0, 1.0, 0.0);
+    else if (camera_perspective_mode == 1)
+    	gluLookAt(player_x+5.0*cos(xz_rad)*cos(y_rad), player_y-5.0*sin(y_rad), player_z+5.0*sin(xz_rad)*cos(y_rad), player_x, player_y, player_z, 0.0, 1.0, 0.0);
+    else if (camera_perspective_mode == 2)
+    	gluLookAt(player_x-5.0*cos(xz_rad)*cos(y_rad), player_y-5.0*sin(y_rad), player_z-5.0*sin(xz_rad)*cos(y_rad), player_x, player_y, player_z, 0.0, 1.0, 0.0);
 
     // Draw
     glEnable(GL_DEPTH_TEST);
     glBegin(GL_QUADS);
+        if(camera_perspective_mode != 0)
+        {
+            double px[4], pfx[4];
+            double pz[4], pfz[4];
+            double py1, py2;
+            // Player
+            // buttom1
+            px[0] = 0.1125;
+            px[1] = -0.1125;
+            px[2] = 0.1125;
+            px[3] = -0.1125;
+            py1 = -1.5+0.0;
+            py2 = -1.5+0.675;
+            pz[0] = 0.0;
+            pz[1] = 0.0;
+            pz[2] = 0.225;
+            pz[3] = 0.225;
+            for(int i=0; i<4; i++)
+            {
+                pfx[i] = px[i] * cos(xz_rad) - pz[i] * sin(xz_rad);
+                pfz[i] = px[i] * sin(xz_rad) + pz[i] * cos(xz_rad);
+            }
+
+            glColor3f(0, 0, 0);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            // buttom2
+            px[0] = 0.1125;
+            px[1] = -0.1125;
+            px[2] = 0.1125;
+            px[3] = -0.1125;
+            pz[0] = -0.225;
+            pz[1] = -0.225;
+            pz[2] = 0.0;
+            pz[3] = 0.0;
+            for(int i=0; i<4; i++)
+            {
+                pfx[i] = px[i] * cos(xz_rad) - pz[i] * sin(xz_rad);
+                pfz[i] = px[i] * sin(xz_rad) + pz[i] * cos(xz_rad);
+            }
+
+            glColor3f(0, 0, 0);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            // body
+            px[0] = 0.1125;
+            px[1] = -0.1125;
+            px[2] = 0.1125;
+            px[3] = -0.1125;
+            py1 = -1.5+0.675;
+            py2 = -1.5+1.35;
+            pz[0] = 0.225;
+            pz[1] = 0.225;
+            pz[2] = -0.225;
+            pz[3] = -0.225;
+            for(int i=0; i<4; i++)
+            {
+                pfx[i] = px[i] * cos(xz_rad) - pz[i] * sin(xz_rad);
+                pfz[i] = px[i] * sin(xz_rad) + pz[i] * cos(xz_rad);
+            }
+            glColor3f(0, 1, 1);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            
+            // arm1
+            px[0] = 0.1125;
+            px[1] = -0.1125;
+            px[2] = 0.1125;
+            px[3] = -0.1125;
+            py1 = -1.5+0.675;
+            py2 = -1.5+1.35;
+            pz[0] = 0.225;
+            pz[1] = 0.225;
+            pz[2] = 0.45;
+            pz[3] = 0.45;
+            for(int i=0; i<4; i++)
+            {
+                pfx[i] = px[i] * cos(xz_rad) - pz[i] * sin(xz_rad);
+                pfz[i] = px[i] * sin(xz_rad) + pz[i] * cos(xz_rad);
+            }
+            glColor3f(0, 1, 0);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            // arm2
+            px[0] = 0.1125;
+            px[1] = -0.1125;
+            px[2] = 0.1125;
+            px[3] = -0.1125;
+            py1 = -1.5+0.675;
+            py2 = -1.5+1.35;
+            pz[0] = -0.225;
+            pz[1] = -0.225;
+            pz[2] = -0.45;
+            pz[3] = -0.45;
+            for(int i=0; i<4; i++)
+            {
+                pfx[i] = px[i] * cos(xz_rad) - pz[i] * sin(xz_rad);
+                pfz[i] = px[i] * sin(xz_rad) + pz[i] * cos(xz_rad);
+            }
+
+            glColor3f(0, 1, 0);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            // head
+            px[0] = 0.225;
+            px[1] = -0.225;
+            px[2] = 0.225;
+            px[3] = -0.225;
+            py1 = -1.5+1.35;
+            py2 = -1.5+1.8;
+            pz[0] = -0.225;
+            pz[1] = -0.225;
+            pz[2] = 0.225;
+            pz[3] = 0.225;
+            for(int i=0; i<4; i++)
+            {
+                pfx[i] = pz[i] * cos(xz_rad) - px[i] * sin(xz_rad);
+                pfz[i] = pz[i] * sin(xz_rad) + px[i] * cos(xz_rad);
+            }
+            glColor3f(1, 0.5, 0);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py2, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[0], player_y+py2, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[0], player_y+py1, player_z+pfz[0]);
+            glVertex3f(player_x+pfx[2], player_y+py1, player_z+pfz[2]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+
+            glVertex3f(player_x+pfx[1], player_y+py1, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[1], player_y+py2, player_z+pfz[1]);
+            glVertex3f(player_x+pfx[3], player_y+py2, player_z+pfz[3]);
+            glVertex3f(player_x+pfx[3], player_y+py1, player_z+pfz[3]);
+        }
+
         double dx, dy, dz;
         for(int i=0; i<33; i++)
         {
@@ -513,7 +813,16 @@ void keyboardup(unsigned char c, int x, int y)
 void special(int c, int x, int y)
 {
 }
-
+void specialup(int c, int x, int y)
+{
+    switch (c)
+    {
+        case GLUT_KEY_F5:
+            camera_perspective_mode ++;
+            camera_perspective_mode %= 3;
+            break;
+    }
+}
 
 void mouse(int button, int state, int x, int y)
 {
