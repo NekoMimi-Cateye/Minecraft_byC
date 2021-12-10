@@ -8,7 +8,10 @@
 #include<math.h>
 
 /*define*/
-#define SEED_NUM 1234567
+#define SEED_NUM 314159265
+#define WORLD_CHUNK 64
+#define DRAW_DIST 8
+#define NEWGAME
 
 /* functions */
 // Wavelet
@@ -17,9 +20,11 @@ void Wavelet2d(double[256][256], double);
 void Wavelet3d(double*, double);
 // PerlinNoize
 void PerlinNoize1d(double*, int, int, int, unsigned int);
-void PerlinNoize2d(int[16][16], int, int, int, unsigned int);
+void PerlinNoize2d(int*, int, int, int, unsigned int);
 void PerlinNoize3d(int*, int, int, int, unsigned int);
-// Save
+// World Create
+void CreateWorld();
+// Save/Load
 void SaveChunk(int*, int, int);
 void LoadChunk(int*, int, int);
 // DrawPlayer
@@ -44,6 +49,10 @@ double player_x = 136.0;
 double player_y = 86.0;
 double player_z = 136.0;
 
+double resporn_player_x = 136.0;
+double resporn_player_y = 96.0;
+double resporn_player_z = 136.0;
+
 int player_block_x = 136;
 int player_block_y = 86;
 int player_block_z = 136;
@@ -63,8 +72,14 @@ int player_local_y = 6;
 int player_local_z = 8;
 
 double dig_hardness = 9.0;
-double block_hardness = 0.75;
+double soil_hardness = 0.75;
+double rock_hardness = 0.1;
+int dig_tag = 0;
 double player_dig_speed = 0.05;
+
+double diamond_rate = 0.0013;
+
+double bar_length;
 
 double dig_search_before_x, dig_search_after_x, dig_search_before_y, dig_search_after_y, dig_search_before_z, dig_search_after_z;
 int dig_search_before_block_x, dig_search_before_block_z;
@@ -118,7 +133,8 @@ double *chunkdata_x;
 double *chunkdata_y;
 double *chunkdata_z;
 int *chunk;
-int map2d[33][33][16][16];
+int *nextchunk;
+int *map2d;
 // mouse status
 double mouse_status[3] = {-1, -1, -1};
 // for draw fps
@@ -139,48 +155,28 @@ char loadposc_str[60];
 char dig_str[30];
 // for debug
 int flag = 0;
+int debugmode = 0;
 
 int main(int argc, char **argv)
 {
+    #ifdef NEWGAME
+        CreateWorld();
+    #endif
     // require 272.25MB
-    chunk = (int*)malloc(sizeof(int)*17*17*16*256*16);
-    chunkdata_x = (double*)malloc(sizeof(double)*17*16);
-    chunkdata_y = (double*)malloc(sizeof(double)*16*16);
-    chunkdata_z = (double*)malloc(sizeof(double)*17*16);
-    for (int i=0; i<17; i++)
-        for (int j=0; j<17; j++)
-            PerlinNoize2d(map2d[i][j], i, j, 1, SEED_NUM);
-    
-    for (int i=0; i<17; i++)
-    {
-        PerlinNoize1d(chunkdata_x+i*16, i, 0, 1, SEED_NUM);
-        PerlinNoize1d(chunkdata_z+i*16, i, 2, 1, SEED_NUM);
-    }
-    for (int i=0; i<16; i++)
-    {
-        PerlinNoize1d(chunkdata_y+i*16, i, 1, 1, SEED_NUM);
-    }
-    for (int i=0; i<17; i++)
-    {
-        for (int j=0; j<17; j++)
-        {
-            for (int x=0; x<16; x++)
-            {
-                for (int z=0; z<16; z++)
-                {
-                    for (int y=0; y<256; y++)
-                    {
-                        if (*(chunkdata_x+i*16+x)+*(chunkdata_y+y)+*(chunkdata_z+j*16+z) < 0.68 && y < map2d[i][j][x][z])
-                            *(chunk+i*1114112+j*65536+x*4096+y*16+z) = 1;
-                        else
-                            *(chunk+i*1114112+j*65536+x*4096+y*16+z) = 0;
-                    }
-                }
-            }
-        }
-    }
-    player_y = (double)map2d[player_chunk_x][player_chunk_z][player_local_x][player_local_z] + 1.5;
+    chunk = (int*)malloc(sizeof(int)*(2*DRAW_DIST+1)*(2*DRAW_DIST+1)*16*256*16);
+    nextchunk = (int*)malloc(sizeof(int)*(2*DRAW_DIST+1)*(2*DRAW_DIST+1)*16*256*16);
+    map2d = (int*)malloc(sizeof(int)*(2*DRAW_DIST+1)*(2*DRAW_DIST+1)*16*16);    
+    chunkdata_x = (double*)malloc(sizeof(double)*(2*DRAW_DIST+1)*16);
+    chunkdata_y = (double*)malloc(sizeof(double)*(2*DRAW_DIST+1)*16);
+    chunkdata_z = (double*)malloc(sizeof(double)*(2*DRAW_DIST+1)*16);
+    for (int i=0; i<2*DRAW_DIST+1; i++)
+        for (int j=0; j<2*DRAW_DIST+1; j++)
+            LoadChunk(chunk+i*1114112+j*65536, i, j);
+
+    /* TODO: resporn argorizm
+    player_y = (double)*(map2d+4352*player_chunk_x+256*player_chunk_z+16*player_local_x+player_local_z) + 1.5;
     player_block_y = (int)(player_y - 1.5);
+    */
     // Initialization
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
@@ -262,6 +258,12 @@ void render(void)
         next_player_x -= speed * sin(xz_rad);
         next_player_z += speed * cos(xz_rad);
     }
+    if (player_y < -2.0)
+    {
+        next_player_x = resporn_player_x;
+        player_y = resporn_player_y;
+        next_player_z = resporn_player_z;
+    }
     if (key_state[6] == 1 && player_jump_tick == -1 && player_fall_tick == -1)
     {
         player_jump_tick = 0;
@@ -288,8 +290,13 @@ void render(void)
         player_chunk_z = next_player_chunk_z;
         player_local_z = next_player_local_z;
     }
+
+    // reload chunk    
     if (player_chunk_x - player_pre_chunk_x >= 4 || player_chunk_x - player_pre_chunk_x <= -4 || player_chunk_z - player_pre_chunk_z >= 4 || player_chunk_z - player_pre_chunk_z <= -4)
     {
+        for (int i=0; i<2*DRAW_DIST+1; i++)
+            for (int j=0; j<2*DRAW_DIST+1; j++)
+                SaveChunk(chunk+i*1114112+j*65536, i+player_pre_loadchunk_x, j+player_pre_loadchunk_z);
         player_pre_chunk_x = player_chunk_x;
         player_pre_loadchunk_x = player_pre_chunk_x - 8;
         if (player_pre_loadchunk_x < 0)
@@ -300,36 +307,11 @@ void render(void)
         player_pre_loadchunk_z = player_pre_chunk_z - 8;
         if (player_pre_loadchunk_z < 0)
             player_pre_loadchunk_z = 0;
-        if (player_pre_loadchunk_z > 38)
-            player_pre_loadchunk_z = 38;
-        for (int i=0; i<17; i++)
-            for (int j=0; j<17; j++)
-                PerlinNoize2d(map2d[i][j], i+player_pre_loadchunk_x, j+player_pre_loadchunk_z, 1, SEED_NUM);
-        
-        for (int i=0; i<17; i++)
-        {
-            PerlinNoize1d(chunkdata_x+i*16, i+player_pre_loadchunk_x, 0, 1, SEED_NUM);
-            PerlinNoize1d(chunkdata_z+i*16, i+player_pre_loadchunk_z, 2, 1, SEED_NUM);
-        }
-        for (int i=0; i<17; i++)
-        {
-            for (int j=0; j<17; j++)
-            {
-                for (int x=0; x<16; x++)
-                {
-                    for (int z=0; z<16; z++)
-                    {
-                        for (int y=0; y<256; y++)
-                        {
-                            if (*(chunkdata_x+i*16+x)+*(chunkdata_y+y)+*(chunkdata_z+j*16+z) < 0.68 && y < map2d[i][j][x][z])
-                                *(chunk+i*1114112+j*65536+x*4096+y*16+z) = 1;
-                            else
-                                *(chunk+i*1114112+j*65536+x*4096+y*16+z) = 0;
-                        }
-                    }
-                }
-            }
-        }
+        if (player_pre_loadchunk_z > WORLD_CHUNK-(2*DRAW_DIST+1))
+            player_pre_loadchunk_z = WORLD_CHUNK-(2*DRAW_DIST+1);
+        for (int i=0; i<2*DRAW_DIST+1; i++)
+            for (int j=0; j<2*DRAW_DIST+1; j++)
+                LoadChunk(chunk+i*1114112+j*65536, i+player_pre_loadchunk_x, j+player_pre_loadchunk_z);
     }
 
     if (fps_count % 100 == 0)
@@ -352,7 +334,7 @@ void render(void)
         player_y += player_fall_velocity;
         player_block_y = (int)(player_y - 1.5);
         player_fall_tick ++;
-        if (*(chunk+(player_chunk_x-player_pre_loadchunk_x)*1114112+(player_chunk_z-player_pre_loadchunk_z)*65536+(player_local_x)*4096+((int)(player_y - 1.5))*16+player_local_z) == 1)
+        if (*(chunk+(player_chunk_x-player_pre_loadchunk_x)*1114112+(player_chunk_z-player_pre_loadchunk_z)*65536+(player_local_x)*4096+((int)(player_y - 1.5))*16+player_local_z) != 0)
         {
             player_y = (double)player_block_y + 2.5;
             player_block_y = (int)(player_y - 1.5);
@@ -368,7 +350,7 @@ void render(void)
         player_y += player_jump_velocity;
         player_block_y = (int)(player_y - 1.5);
         player_jump_tick ++;
-        if (*(chunk+(player_chunk_x-player_pre_loadchunk_x)*1114112+(player_chunk_z-player_pre_loadchunk_z)*65536+(player_local_x)*4096+((int)(player_y - 1.5))*16+player_local_z) == 1)
+        if (*(chunk+(player_chunk_x-player_pre_loadchunk_x)*1114112+(player_chunk_z-player_pre_loadchunk_z)*65536+(player_local_x)*4096+((int)(player_y - 1.5))*16+player_local_z) != 0)
         {
             player_y = (double)player_block_y + 2.5;
             player_block_y = (int)(player_y - 1.5);
@@ -402,7 +384,25 @@ void render(void)
                     dig_now_x = (int)dig_search_after_x;
                     dig_now_y = (int)dig_search_after_y;
                     dig_now_z = (int)dig_search_after_z;
-                    dig_hardness = block_hardness;
+                    dig_hardness = soil_hardness;
+                    dig_tag = 1;
+                }
+                if (dig_hardness <= 0.0)
+                    *(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) = 0;
+                dig_flag = 1;
+                break;
+            }
+            if(*(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) == 2)
+            {
+                if (dig_now_x == (int)dig_search_after_x && dig_now_y == (int)dig_search_after_y && dig_now_z == (int)dig_search_after_z)
+                    dig_hardness -= player_dig_speed;
+                else
+                {
+                    dig_now_x = (int)dig_search_after_x;
+                    dig_now_y = (int)dig_search_after_y;
+                    dig_now_z = (int)dig_search_after_z;
+                    dig_hardness = rock_hardness;
+                    dig_tag = 2;
                 }
                 if (dig_hardness <= 0.0)
                     *(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) = 0;
@@ -422,8 +422,33 @@ void render(void)
     }
     else
     {
-        dig_hardness = block_hardness;
         dig_flag = 0;
+        for(double a=0; a<5.0; a+= 0.05)
+        {
+            dig_search_after_x = player_x+a*cos(xz_rad)*cos(y_rad);
+            dig_search_after_block_x = (int)dig_search_after_x;
+            dig_search_after_chunk_x = dig_search_after_block_x / 16;
+            dig_search_after_local_x = dig_search_after_block_x % 16;
+            dig_search_after_y = player_y-a*sin(y_rad);
+            dig_search_after_z = player_z+a*sin(xz_rad)*cos(y_rad);
+            dig_search_after_block_z = (int)dig_search_after_z;
+            dig_search_after_chunk_z = dig_search_after_block_z / 16;
+            dig_search_after_local_z = dig_search_after_block_z % 16;
+            if(*(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) == 1)
+            {
+                dig_tag = 1;
+                break;
+            }
+            if(*(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) == 2)
+            {
+                dig_tag = 2;
+                break;
+            }
+        }
+        if (dig_tag == 1)
+            dig_hardness = soil_hardness;
+        if (dig_tag == 2)
+            dig_hardness = rock_hardness;
     }
 
     // Clear
@@ -475,11 +500,11 @@ void render(void)
                         dz = (double)(z+(player_pre_loadchunk_z+j)*16);
                         for (int y = 0; y < 256; y ++)
                         {
-                            if (*(chunk+i*1114112+j*65536+x*4096+y*16+z) == 1)
+                            if (*(chunk+i*1114112+j*65536+x*4096+y*16+z) == 1 && (debugmode == 0 || debugmode == 1))
                             {
                                 dy = (double) y;
                                 // x-Higher
-                                if (x == 15 || (x < 15 && *(chunk+i*1114112+j*65536+(x+1)*4096+y*16+z) == 0))
+                                if ((i < draw_xmax-1 && x == 15 && *(chunk+(i+1)*1114112+j*65536+y*16+z) == 0) || (x < 15 && *(chunk+i*1114112+j*65536+(x+1)*4096+y*16+z) == 0))
                                 {
                                     glColor3f(0.66, 0.43, 0.18);
                                     glVertex3f(dx+1.0, dy+0.0, dz+0.0);
@@ -517,7 +542,7 @@ void render(void)
                                     }
                                 }
                                 // z-Higher
-                                if (z == 15 || (z < 15 && *(chunk+i*1114112+j*65536+x*4096+y*16+z+1) == 0))
+                                if ((j < draw_zmax-1 && z == 15 && *(chunk+i*1114112+(j+1)*65536+x*4096+y*16) == 0) || (z < 15 && *(chunk+i*1114112+j*65536+x*4096+y*16+z+1) == 0))
                                 {
                                     glColor3f(0.48, 0.34, 0.14);
                                     glVertex3f(dx+0.0, dy+0.0, dz+1.0);
@@ -530,7 +555,7 @@ void render(void)
                                 }
 
                                 // x-Lower
-                                if (x == 0 || (x > 0 && *(chunk+i*1114112+j*65536+(x-1)*4096+y*16+z) == 0))
+                                if ((i > 0 && x == 0 && *(chunk+(i-1)*1114112+j*65536+15*4096+y*16+z) == 0) || (x > 0 && *(chunk+i*1114112+j*65536+(x-1)*4096+y*16+z) == 0))
                                 {
                                     glColor3f(0.34, 0.22, 0.09);
                                     glVertex3f(dx+0.0, dy+0.0, dz+0.0);
@@ -556,7 +581,7 @@ void render(void)
                                 }
 
                                 // z-Lower
-                                if (z == 0 || (z > 0 && *(chunk+i*1114112+j*65536+x*4096+y*16+z-1) == 0))
+                                if ((j > 0 && z == 0 && *(chunk+i*1114112+(j-1)*65536+x*4096+y*16+15) == 0) || (z > 0 && *(chunk+i*1114112+j*65536+x*4096+y*16+z-1) == 0))
                                 {
                                     glColor3f(0.42, 0.27, 0.11);
                                     glVertex3f(dx+0.0, dy+0.0, dz+0.0);
@@ -568,6 +593,285 @@ void render(void)
                                     glVertex3f(dx+1.0, dy+0.0, dz+0.0);
                                 }
                             }
+                            if (*(chunk+i*1114112+j*65536+x*4096+y*16+z) == 2 && (debugmode == 0 || debugmode == 2))
+                            {
+                                dy = (double) y;
+                                // x-Higher
+                                if ((i < draw_xmax-1 && x == 15 && *(chunk+(i+1)*1114112+j*65536+y*16+z) == 0) || (x < 15 && *(chunk+i*1114112+j*65536+(x+1)*4096+y*16+z) == 0))
+                                {
+                                    glColor3f(0.47, 0.47, 0.47);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.30, 0.30, 0.30);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                }
+                                // y-Higher
+                                if (y == 255 || (y < 255 && *(chunk+i*1114112+j*65536+x*4096+(y+1)*16+z) == 0))
+                                {
+                                    if (player_pre_loadchunk_x+i > 0 && player_pre_loadchunk_z+j > 0 && player_pre_loadchunk_x+i < 55 && player_pre_loadchunk_z+j < 55)
+                                    {
+                                        glColor3f(0.93, 0.93, 0.93);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                        glColor3f(0.74, 0.74, 0.74);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.53, 0.53, 0.53);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.74, 0.74, 0.74);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    }
+                                    else
+                                    {
+                                        glColor3f(0.93, 0.93, 0.93);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                        glColor3f(0.74, 0.74, 0.74);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.53, 0.53, 0.53);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.74, 0.74, 0.74);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    }
+                                }
+                                // z-Higher
+                                if ((j < draw_zmax-1 && z == 15 && *(chunk+i*1114112+(j+1)*65536+x*4096+y*16) == 0) || (z < 15 && *(chunk+i*1114112+j*65536+x*4096+y*16+z+1) == 0))
+                                {
+                                    glColor3f(0.47, 0.47, 0.47);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.30, 0.30, 0.30);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                }
+
+                                // x-Lower
+                                if ((i > 0 && x == 0 && *(chunk+(i-1)*1114112+j*65536+15*4096+y*16+z) == 0) || (x > 0 && *(chunk+i*1114112+j*65536+(x-1)*4096+y*16+z) == 0))
+                                {
+                                    glColor3f(0.47, 0.47, 0.47);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.30, 0.30, 0.30);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                }
+
+                                // y-Lower
+                                if (y == 0 || (y > 0 && *(chunk+i*1114112+j*65536+x*4096+(y-1)*16+z) == 0))
+                                {
+                                    glColor3f(0.24, 0.24, 0.24);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.19, 0.19, 0.19);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.16, 0.16, 0.16);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.19, 0.19, 0.19);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                }
+
+                                // z-Lower
+                                if ((j > 0 && z == 0 && *(chunk+i*1114112+(j-1)*65536+x*4096+y*16+15) == 0) || (z > 0 && *(chunk+i*1114112+j*65536+x*4096+y*16+z-1) == 0))
+                                {
+                                    glColor3f(0.47, 0.47, 0.47);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                    glColor3f(0.30, 0.30, 0.30);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    glColor3f(0.38, 0.38, 0.38);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                }
+                            }
+                            if (*(chunk+i*1114112+j*65536+x*4096+y*16+z) == 3&& (debugmode == 0 || debugmode == 3))
+                            {
+                                dy = (double) y;
+                                // x-Higher
+                                if (debugmode == 3 || (i < draw_xmax-1 && x == 15 && *(chunk+(i+1)*1114112+j*65536+y*16+z) == 0) || (x < 15 && *(chunk+i*1114112+j*65536+(x+1)*4096+y*16+z) == 0))
+                                {
+                                    glColor3f(0.18, 0.39, 0.41);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.11, 0.22, 0.23);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                }
+                                // y-Higher
+                                if (debugmode == 3 || y == 255 || (y < 255 && *(chunk+i*1114112+j*65536+x*4096+(y+1)*16+z) == 0))
+                                {
+                                    if (player_pre_loadchunk_x+i > 0 && player_pre_loadchunk_z+j > 0 && player_pre_loadchunk_x+i < 55 && player_pre_loadchunk_z+j < 55)
+                                    {
+                                        glColor3f(0.45, 0.93, 0.96);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                        glColor3f(0.33, 0.7, 0.72);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.25, 0.52, 0.54);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.33, 0.7, 0.72);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    }
+                                    else
+                                    {
+                                        glColor3f(0.45, 0.93, 0.96);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                        glColor3f(0.33, 0.74, 0.72);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.25, 0.53, 0.54);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.33, 0.74, 0.72);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    }
+                                }
+                                // z-Higher
+                                if (debugmode == 3 || (j < draw_zmax-1 && z == 15 && *(chunk+i*1114112+(j+1)*65536+x*4096+y*16) == 0) || (z < 15 && *(chunk+i*1114112+j*65536+x*4096+y*16+z+1) == 0))
+                                {
+                                    glColor3f(0.18, 0.39, 0.41);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.11, 0.22, 0.23);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                }
+
+                                // x-Lower
+                                if (debugmode == 3 || (i > 0 && x == 0 && *(chunk+(i-1)*1114112+j*65536+15*4096+y*16+z) == 0) || (x > 0 && *(chunk+i*1114112+j*65536+(x-1)*4096+y*16+z) == 0))
+                                {
+                                    glColor3f(0.18, 0.39, 0.41);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.11, 0.22, 0.23);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                }
+
+                                // y-Lower
+                                if (debugmode == 3 || y == 0 || (y > 0 && *(chunk+i*1114112+j*65536+x*4096+(y-1)*16+z) == 0))
+                                {
+                                    glColor3f(0.08, 0.17, 0.17);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.06, 0.12, 0.13);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.04, 0.09, 0.09);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.06, 0.12, 0.13);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                }
+
+                                // z-Lower
+                                if (debugmode == 3 || (j > 0 && z == 0 && *(chunk+i*1114112+(j-1)*65536+x*4096+y*16+15) == 0) || (z > 0 && *(chunk+i*1114112+j*65536+x*4096+y*16+z-1) == 0))
+                                {
+                                    glColor3f(0.18, 0.39, 0.41);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                    glColor3f(0.11, 0.22, 0.23);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    glColor3f(0.14, 0.29, 0.30);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                }
+                            }
+                            if (*(chunk+i*1114112+j*65536+x*4096+y*16+z) == 4 && debugmode == 0)
+                            {
+                                dy = (double) y;
+                                // x-Higher
+                                if ((i < draw_xmax-1 && x == 15 && *(chunk+(i+1)*1114112+j*65536+y*16+z) == 0) || (x < 15 && *(chunk+i*1114112+j*65536+(x+1)*4096+y*16+z) == 0))
+                                {
+                                    glColor3f(0.06, 0.06, 0.06);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.04, 0.04, 0.04);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                }
+                                // y-Higher
+                                if (y == 255 || (y < 255 && *(chunk+i*1114112+j*65536+x*4096+(y+1)*16+z) == 0))
+                                {
+                                    if (player_pre_loadchunk_x+i > 0 && player_pre_loadchunk_z+j > 0 && player_pre_loadchunk_x+i < 55 && player_pre_loadchunk_z+j < 55)
+                                    {
+                                        glColor3f(0.1, 0.1, 0.1);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                        glColor3f(0.09, 0.09, 0.09);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.08, 0.08, 0.08);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.09, 0.09, 0.09);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    }
+                                    else
+                                    {
+                                        glColor3f(0.1, 0.1, 0.1);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                        glColor3f(0.09, 0.09, 0.09);
+                                        glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.08, 0.08, 0.08);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                        glColor3f(0.09, 0.09, 0.09);
+                                        glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    }
+                                }
+                                // z-Higher
+                                if ((j < draw_zmax-1 && z == 15 && *(chunk+i*1114112+(j+1)*65536+x*4096+y*16) == 0) || (z < 15 && *(chunk+i*1114112+j*65536+x*4096+y*16+z+1) == 0))
+                                {
+                                    glColor3f(0.06, 0.06, 0.06);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.04, 0.04, 0.04);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                }
+
+                                // x-Lower
+                                if ((i > 0 && x == 0 && *(chunk+(i-1)*1114112+j*65536+15*4096+y*16+z) == 0) || (x > 0 && *(chunk+i*1114112+j*65536+(x-1)*4096+y*16+z) == 0))
+                                {
+                                    glColor3f(0.06, 0.06, 0.06);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.04, 0.04, 0.04);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+1.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                }
+
+                                // y-Lower
+                                if (y == 0 || (y > 0 && *(chunk+i*1114112+j*65536+x*4096+(y-1)*16+z) == 0))
+                                {
+                                    glColor3f(0.02, 0.02, 0.02);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.01, 0.01, 0.01);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.00, 0.00, 0.00);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+1.0);
+                                    glColor3f(0.01, 0.01, 0.01);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                }
+
+                                // z-Lower
+                                if ((j > 0 && z == 0 && *(chunk+i*1114112+(j-1)*65536+x*4096+y*16+15) == 0) || (z > 0 && *(chunk+i*1114112+j*65536+x*4096+y*16+z-1) == 0))
+                                {
+                                    glColor3f(0.06, 0.06, 0.06);
+                                    glVertex3f(dx+0.0, dy+0.0, dz+0.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+0.0, dy+1.0, dz+0.0);
+                                    glColor3f(0.04, 0.04, 0.04);
+                                    glVertex3f(dx+1.0, dy+1.0, dz+0.0);
+                                    glColor3f(0.05, 0.05, 0.05);
+                                    glVertex3f(dx+1.0, dy+0.0, dz+0.0);
+                                }
+                            }
                         }
                     }
                 }
@@ -576,7 +880,10 @@ void render(void)
     glEnd();
     if (dig_flag == 1)
     {
-        double bar_length = (dig_hardness / block_hardness) * 0.8 - 0.4;
+        if (dig_tag == 1)
+            bar_length = (dig_hardness / soil_hardness) * 0.8 - 0.4;
+        else
+            bar_length = (dig_hardness / rock_hardness) * 0.8 - 0.4;
         glColor3f(0.0, 0.0, 1.0);
         glBegin(GL_QUADS);
             glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad)*0.4, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 - cos(xz_rad)*0.4);
@@ -749,6 +1056,19 @@ void specialup(int c, int x, int y)
             camera_perspective_mode ++;
             camera_perspective_mode %= 3;
             break;
+        case GLUT_KEY_F1:
+            debugmode = 1;
+            break;
+        case GLUT_KEY_F2:
+            debugmode = 2;
+            break;
+        case GLUT_KEY_F3:
+            debugmode = 3;
+            break;
+        case GLUT_KEY_F4:
+            debugmode = 0;
+            break;
+
     }
 }
 
@@ -786,7 +1106,7 @@ void mouse(int button, int state, int x, int y)
                 next_view_block_z = (int)after_z;
                 next_view_chunk_z = next_view_block_z / 16;
                 next_view_local_z = next_view_block_z % 16;
-                if(*(chunk+(next_view_chunk_x-player_pre_loadchunk_x)*1114112+(next_view_chunk_z-player_pre_loadchunk_z)*65536+(next_view_local_x)*4096+(int)(after_y)*16+next_view_local_z) == 1)
+                if(*(chunk+(next_view_chunk_x-player_pre_loadchunk_x)*1114112+(next_view_chunk_z-player_pre_loadchunk_z)*65536+(next_view_local_x)*4096+(int)(after_y)*16+next_view_local_z) != 0)
                 {
                     if((int)after_x != (int)before_x && ((int) before_x != (int)player_x || ((int)after_y != (int)(player_y - 1.5) && (int)after_y != (int)(player_y - 0.5)) || (int) after_z != (int)player_z))
                         *(chunk+(view_chunk_x-player_pre_loadchunk_x)*1114112+(next_view_chunk_z-player_pre_loadchunk_z)*65536+(view_local_x)*4096+(int)(after_y)*16+next_view_local_z) = 1;
@@ -924,7 +1244,7 @@ void PerlinNoize1d(double* data, int chunk_xpos, int direction, int use_seed, un
 
     double C[64];                     // Wavelet data
     double W[32][2];                  // Graph data for marge
-    double a[29][3];                      // Gradient data
+    double a[32][3];                      // Gradient data
 
     double dx;
 
@@ -962,7 +1282,7 @@ void PerlinNoize1d(double* data, int chunk_xpos, int direction, int use_seed, un
     }
 }
 
-void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_seed, unsigned int seed)
+void PerlinNoize2d(int *data, int chunk_xpos, int chunk_zpos, int use_seed, unsigned int seed)
 {
     int noizeport_x = chunk_xpos / 8;
     int noizeport_z = chunk_zpos / 8;
@@ -1030,7 +1350,7 @@ void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_see
         {
             zp = 16 * mod_chunk_zpos + z;
             //marge (way: x)
-            data[x][z] = 80 + lround(Wp[xp][zp][0] + dx * (Wp[xp][zp][1] - Wp[xp][zp][0]));
+            *(data+16*x+z) = 80 + lround(Wp[xp][zp][0] + dx * (Wp[xp][zp][1] - Wp[xp][zp][0]));
         }
     }
 }
@@ -1286,34 +1606,107 @@ void DrawPlayer(void)
     }
 }
 
-void SaveChunk(int* data, int startx, int starty);
+void CreateWorld()
 {
-    FILE* f;
-    char filename[10];
-    for(int i=0; i<17; i++)
+    int* onechunk3d;
+    int* onechunk2d;
+    double* dia_rate;
+    double* onechunk1d_x;
+    double* onechunk1d_y;
+    double* onechunk1d_z;
+    double rate_rate;
+
+    onechunk3d = (int*)malloc(sizeof(int)*16*256*16);
+    onechunk2d = (int*)malloc(sizeof(int)*17*16);
+    onechunk1d_x = (double*)malloc(sizeof(double)*16);
+    onechunk1d_y = (double*)malloc(sizeof(double)*16*16);
+    onechunk1d_z = (double*)malloc(sizeof(double)*16);
+    dia_rate = (double*)malloc(sizeof(double)*64*64*16*16*16);
+    srand(SEED_NUM);
+    for (int i=0; i<64; i++)
+        for (int j=0; j<64; j++)
+            for (int x=0; x<16; x++)
+                for (int y=0; y<16; y++)
+                    for (int z=0; z<16; z++)
+                        *(dia_rate+262144*i+4096*j+256*x+16*y+z) = (double)rand() / (double)RAND_MAX;
+    
+    for (int i=0; i<16; i++)
+        PerlinNoize1d(onechunk1d_y+i*16, i, 1, 1, SEED_NUM);
+
+    for (int i=0; i<WORLD_CHUNK; i++)
     {
-        for(int j=0; j<17; j++)
+        for (int j=0; j<WORLD_CHUNK; j++)
         {
-            sprintf(filename, "%02d_%02d.dat", i+startx, i+starty);
-            fopen(f, "wb");
-                for(int x=0;x<16; x++)
-                    for(int y=0;y<256; y++)
-                        for(int z=0;z<16; z++)
-                            fwrite((data+(i+startx)*1114112+(j+starty)*65536+x*4096+y*16+z), (sizeof)int, 1, fp);
-            fclose(f);
+            PerlinNoize2d(onechunk2d, i, j, 1, SEED_NUM);
+            PerlinNoize1d(onechunk1d_x, i, 0, 1, SEED_NUM);
+            PerlinNoize1d(onechunk1d_z, j, 2, 1, SEED_NUM);
+            for (int x=0; x<16; x++)
+            {
+                for (int z=0; z<16; z++)
+                {
+                    for (int y=0; y<256; y++)
+                    {
+                        if (*(onechunk1d_x+x)+*(onechunk1d_y+y)+*(onechunk1d_z+z) < 0.68)
+                        {
+                            if (y < *(onechunk2d+16*x+z)-3)
+                            {
+                                *(onechunk3d+x*4096+y*16+z) = 2;
+                            }
+                            else if (y < *(onechunk2d+16*x+z))
+                            {
+                                *(onechunk3d+x*4096+y*16+z) = 1;
+                            }
+                            else
+                            {
+                                *(onechunk3d+x*4096+y*16+z) = 0;                                
+                            }
+                            if (y < 16)
+                            {
+                                if (y >= 5 || y <= 12)
+                                    rate_rate = 1.0;
+                                else if (y < 5)
+                                    rate_rate = (1.0 - (double)(y) / 5.0);
+                                else if (y > 12)
+                                    rate_rate = (double)(15 - y) / 3.0;
+                                if (*(dia_rate+262144*i+4096*j+256*x+16*y+z) <= (diamond_rate * rate_rate))
+                                    *(onechunk3d+x*4096+y*16+z) = 3;
+                            }
+                            if (y == 0)
+                            {
+                                *(onechunk3d+x*4096+y*16+z) = 4;
+                            }
+                        }
+                        else
+                            *(onechunk3d+x*4096+y*16+z) = 0;
+                    }
+                }
+            }
+            SaveChunk(onechunk3d, i, j);
+            printf("\rcreated chunk: %d, %d", i, j);
+            fflush(stdout);
         }
     }
+    free(onechunk3d);
+    free(onechunk2d);
+    free(onechunk1d_x);
+    free(onechunk1d_y);
+    free(onechunk1d_z);
 }
 
-void LoadChunk(int* data, int startx, int starty);
+void SaveChunk(int* chunk, int savex, int savey)
 {
-    for(int i=0; i<17; i++)
-    {
-        for(int j=0; j<17; j++)
-        {
-            sprintf(filename, "%02d_%02d.dat", i+startx, i+starty);
-            fopen(f, "rb");
-            fclose(f);
-        }
-    }    
+    char filename[30];
+    sprintf(filename, "data/%d_%d.dat", savex, savey);
+    FILE *f = fopen(filename, "wb");
+    fwrite(chunk, sizeof(int), 16*16*256, f);
+    fclose(f);
+}
+
+void LoadChunk(int* chunk, int loadx, int loady)
+{
+    char filename[30];
+    sprintf(filename, "data/%d_%d.dat", loadx, loady);
+    FILE *f = fopen(filename, "rb");
+    fread(chunk, sizeof(int), 16*16*256, f);
+    fclose(f);
 }
