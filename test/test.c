@@ -8,7 +8,7 @@
 #include<math.h>
 
 /*define*/
-#define SEED_NUM 123
+#define SEED_NUM 1234567
 
 /* functions */
 // Wavelet
@@ -31,6 +31,7 @@ void keyboard(unsigned char, int, int);
 void keyboardup(unsigned char, int, int);
 void mouse(int, int, int, int);
 void motion(int, int);
+void draging(int, int);
 void special(int, int, int);
 void specialup(int, int, int);
 
@@ -57,6 +58,21 @@ int player_chunk_z = 8;
 int player_local_x = 8;
 int player_local_y = 6;
 int player_local_z = 8;
+
+double dig_hardness = 9.0;
+double block_hardness = 0.75;
+double player_dig_speed = 0.05;
+
+double dig_search_before_x, dig_search_after_x, dig_search_before_y, dig_search_after_y, dig_search_before_z, dig_search_after_z;
+int dig_search_before_block_x, dig_search_before_block_z;
+int dig_search_before_chunk_x, dig_search_before_chunk_z;
+int dig_search_before_local_x, dig_search_before_local_z;
+int dig_search_after_block_x, dig_search_after_block_z;
+int dig_search_after_chunk_x, dig_search_after_chunk_z;
+int dig_search_after_local_x, dig_search_after_local_z;
+int dig_now_x =-1000, dig_now_y=-1000, dig_now_z=-1000;
+int dig_flag = 0;
+
 // Player model position info - {x_min, x_max, y_min, y_max, z_min, z_max}
 double player_model_pos_info[3][6] = {{-0.1125, 0.1125, 0.1125, -0.5625, -0.1125, 0.1125},
                                       {-0.1125, 0.1125, -0.825, -0.15, -0.225, 0.225},
@@ -100,6 +116,8 @@ double *chunkdata_y;
 double *chunkdata_z;
 int *chunk;
 int map2d[33][33][16][16];
+// mouse status
+double mouse_status[3] = {-1, -1, -1};
 // for draw fps
 struct timeval start, end;
 double fps[10] = {0};
@@ -115,6 +133,7 @@ char chunk_str[40];
 char keystate_str[60];
 char loadpos_str[60];
 char loadposc_str[60];
+char dig_str[30];
 // for debug
 int flag = 0;
 
@@ -179,6 +198,7 @@ int main(int argc, char **argv)
     glutSpecialFunc(special);
     glutSpecialUpFunc(specialup);
     glutMouseFunc(mouse);
+    glutMotionFunc(draging);
     glutPassiveMotionFunc(motion);
     glutTimerFunc(100, timer, 0);
 
@@ -355,6 +375,54 @@ void render(void)
         }
     }
 
+    // DIG
+    if (mouse_status[1] == 1)
+    {
+        dig_flag = 0;
+        for(double a=0; a<5.0; a+= 0.05)
+        {
+            dig_search_after_x = player_x+a*cos(xz_rad)*cos(y_rad);
+            dig_search_after_block_x = (int)dig_search_after_x;
+            dig_search_after_chunk_x = dig_search_after_block_x / 16;
+            dig_search_after_local_x = dig_search_after_block_x % 16;
+            dig_search_after_y = player_y-a*sin(y_rad);
+            dig_search_after_z = player_z+a*sin(xz_rad)*cos(y_rad);
+            dig_search_after_block_z = (int)dig_search_after_z;
+            dig_search_after_chunk_z = dig_search_after_block_z / 16;
+            dig_search_after_local_z = dig_search_after_block_z % 16;
+            if(*(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) == 1)
+            {
+                if (dig_now_x == (int)dig_search_after_x && dig_now_y == (int)dig_search_after_y && dig_now_z == (int)dig_search_after_z)
+                    dig_hardness -= player_dig_speed;
+                else
+                {
+                    dig_now_x = (int)dig_search_after_x;
+                    dig_now_y = (int)dig_search_after_y;
+                    dig_now_z = (int)dig_search_after_z;
+                    dig_hardness = block_hardness;
+                }
+                if (dig_hardness <= 0.0)
+                    *(chunk+(dig_search_after_chunk_x-player_pre_loadchunk_x)*1114112+(dig_search_after_chunk_z-player_pre_loadchunk_z)*65536+(dig_search_after_local_x)*4096+(int)(dig_search_after_y)*16+dig_search_after_local_z) = 0;
+                dig_flag = 1;
+                break;
+            }
+            dig_search_before_x = dig_search_after_x;
+            dig_search_before_block_x = (int)dig_search_before_x;
+            dig_search_before_chunk_x = dig_search_before_block_x / 16;
+            dig_search_before_local_x = dig_search_before_block_x % 16;
+            dig_search_before_y = dig_search_after_y;
+            dig_search_before_z = dig_search_after_z;
+            dig_search_before_block_z = (int)dig_search_before_z;
+            dig_search_before_chunk_z = dig_search_before_block_z / 16;
+            dig_search_before_local_z = dig_search_before_block_z % 16;
+        }
+    }
+    else
+    {
+        dig_hardness = block_hardness;
+        dig_flag = 0;
+    }
+
     // Clear
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawBuffer(GL_FRONT);
@@ -402,7 +470,7 @@ void render(void)
                     for (int z = 0; z < 16; z++)
                     {
                         dz = (double)(z+(player_pre_loadchunk_z+j)*16);
-                        for (int y = 0; y < map2d[i][j][x][z]; y ++)
+                        for (int y = 0; y < 256; y ++)
                         {
                             if (*(chunk+i*1114112+j*65536+x*4096+y*16+z) == 1)
                             {
@@ -503,6 +571,25 @@ void render(void)
             }
         }
     glEnd();
+    if (dig_flag == 1)
+    {
+        double bar_length = (dig_hardness / block_hardness) * 0.8 - 0.4;
+        glColor3f(0.0, 0.0, 1.0);
+        glBegin(GL_QUADS);
+            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad)*0.4, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 - cos(xz_rad)*0.4);
+            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad)*bar_length, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 + cos(xz_rad)*bar_length);
+            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad)*bar_length, (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 + cos(xz_rad)*bar_length);
+            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad)*0.4, (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 - cos(xz_rad)*0.4);
+        glEnd();
+        glColor3f(0.0, 0.0, 0.0);
+        glBegin(GL_QUADS);
+            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad)*(-bar_length), (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 - cos(xz_rad)*(-bar_length));
+            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad)*0.4, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 + cos(xz_rad)*0.4);
+            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad)*0.4, (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 + cos(xz_rad)*0.4);
+            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad)*(-bar_length), (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 - cos(xz_rad)*(-bar_length));
+        glEnd();
+    }
+
     // write strings
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -514,19 +601,20 @@ void render(void)
     glPushMatrix();
     glLoadIdentity();
     glLineWidth(3.0);
-    int itembox_x =w / 2 - 136;
-    int itembox_y = h / 2 + 136;
+    int itembox_x = w / 2 - 288;
+    int itembox_y = h - 128;
+    glColor3f(1.0, 1.0, 1.0);
     glBegin(GL_LINES);
         for (int i=0; i<9; i++)
         {
-            glVertex2i(itembox_x +  32*i    , itembox_y);
-            glVertex2i(itembox_x +  32*(i+1), itembox_y);
-            glVertex2i(itembox_x +  32*(i+1), itembox_y);
-            glVertex2i(itembox_x +  32*(i+1), itembox_y + 32);
-            glVertex2i(itembox_x +  32*(i+1), itembox_y + 32);
-            glVertex2i(itembox_x +  32*i    , itembox_y + 32);
-            glVertex2i(itembox_x +  32*i    , itembox_y + 32);
-            glVertex2i(itembox_x +  32*i    , itembox_y);
+            glVertex2i(itembox_x +  64*i    , itembox_y);
+            glVertex2i(itembox_x +  64*(i+1), itembox_y);
+            glVertex2i(itembox_x +  64*(i+1), itembox_y);
+            glVertex2i(itembox_x +  64*(i+1), itembox_y + 64);
+            glVertex2i(itembox_x +  64*(i+1), itembox_y + 64);
+            glVertex2i(itembox_x +  64*i    , itembox_y + 64);
+            glVertex2i(itembox_x +  64*i    , itembox_y + 64);
+            glVertex2i(itembox_x +  64*i    , itembox_y);
         }
     glEnd();
     glColor3f(0, 0, 0);
@@ -551,6 +639,9 @@ void render(void)
     glRasterPos2i(0, 16*15);
     for(int j=0; j<60; j++)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, loadposc_str[j]);
+    glRasterPos2i(0, 16*16);
+    for(int j=0; j<30; j++)
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, dig_str[j]);
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
@@ -580,6 +671,7 @@ void render(void)
     sprintf(keystate_str, "F:%d B:%d L:%d R:%d SLOW:%d FAST:%d JUMP:%d", key_state[0], key_state[1], key_state[2], key_state[3], key_state[4], key_state[5], key_state[6]);
     sprintf(loadposc_str, "LOAD CHUNK(PLAYER): %d %d", player_pre_chunk_x, player_pre_chunk_z);
     sprintf(loadpos_str, "LOAD CHUNK(START): %d %d", player_pre_loadchunk_x, player_pre_loadchunk_z);
+    sprintf(dig_str, "BLOCK HARD(DIGING): %.2lf", dig_hardness);
 }
 
 void reshape(int width, int height)
@@ -659,9 +751,79 @@ void specialup(int c, int x, int y)
 
 void mouse(int button, int state, int x, int y)
 {
+    double before_x, after_x, before_y, after_y, before_z, after_z;
+    int view_block_x, view_block_z;
+    int view_chunk_x, view_chunk_z;
+    int view_local_x, view_local_z;
+    int next_view_block_x, next_view_block_z;
+    int next_view_chunk_x, next_view_chunk_z;
+    int next_view_local_x, next_view_local_z;
+    before_x = player_x;
+    view_block_x = (int)before_x;
+    view_chunk_x = view_block_x / 16;
+    view_local_x = view_block_x % 16;
+    before_y = player_y;
+    before_z = player_z;
+    view_block_z = (int)before_z;
+    view_chunk_z = view_block_z / 16;
+    view_local_z = view_block_z % 16;
+    if (button == GLUT_RIGHT_BUTTON)
+    {
+        mouse_status[0] *= -1;
+        if (mouse_status[0] == 1)
+        {
+            for(double a=0; a<5.0; a+= 0.05)
+            {
+                after_x = player_x+a*cos(xz_rad)*cos(y_rad);
+                next_view_block_x = (int)after_x;
+                next_view_chunk_x = next_view_block_x / 16;
+                next_view_local_x = next_view_block_x % 16;
+                after_y = player_y-a*sin(y_rad);
+                after_z = player_z+a*sin(xz_rad)*cos(y_rad);
+                next_view_block_z = (int)after_z;
+                next_view_chunk_z = next_view_block_z / 16;
+                next_view_local_z = next_view_block_z % 16;
+                if(*(chunk+(next_view_chunk_x-player_pre_loadchunk_x)*1114112+(next_view_chunk_z-player_pre_loadchunk_z)*65536+(next_view_local_x)*4096+(int)(after_y)*16+next_view_local_z) == 1)
+                {
+                    if((int)after_x != (int)before_x && ((int) before_x != (int)player_x || ((int)after_y != (int)(player_y - 1.5) && (int)after_y != (int)(player_y - 0.5)) || (int) after_z != (int)player_z))
+                        *(chunk+(view_chunk_x-player_pre_loadchunk_x)*1114112+(next_view_chunk_z-player_pre_loadchunk_z)*65536+(view_local_x)*4096+(int)(after_y)*16+next_view_local_z) = 1;
+                    else if ((int)after_y != (int)before_y && ((int) after_x != (int)player_x || ((int)before_y != (int)(player_y - 1.5) && (int)before_y != (int)(player_y - 0.5)) || (int) after_z != (int)player_z))
+                        *(chunk+(next_view_chunk_x-player_pre_loadchunk_x)*1114112+(next_view_chunk_z-player_pre_loadchunk_z)*65536+(next_view_local_x)*4096+(int)(before_y)*16+next_view_local_z) = 1;
+                    else if ((int)after_z != (int)before_z && ((int) after_x != (int)player_x || ((int)after_y != (int)(player_y - 1.5) && (int)after_y != (int)(player_y - 0.5)) || (int) before_z != (int)player_z))
+                        *(chunk+(next_view_chunk_x-player_pre_loadchunk_x)*1114112+(view_chunk_z-player_pre_loadchunk_z)*65536+(next_view_local_x)*4096+(int)(after_y)*16+view_local_z) = 1;
+                    break;
+                }
+                before_x = after_x;
+                view_block_x = (int)before_x;
+                view_chunk_x = view_block_x / 16;
+                view_local_x = view_block_x % 16;
+                before_y = after_y;
+                before_z = after_z;
+                view_block_z = (int)before_z;
+                view_chunk_z = view_block_z / 16;
+                view_local_z = view_block_z % 16;
+            }
+        }
+    }
+    else if (button == GLUT_LEFT_BUTTON)
+        mouse_status[1] *= -1;
 }
 
 void motion(int x, int y)
+{
+    glutWarpPointer(mouse_x, mouse_y);
+    glutSetCursor(GLUT_CURSOR_NONE);
+    if (mouse_x - x != 0)
+        xz_rad -= (double)(mouse_x - x) * M_PI / 180.0 / 8.0;
+    if (mouse_y - y != 0 && y_rad > -M_PI / 2.0 && y_rad < M_PI / 2.0)
+        y_rad -= (double)(mouse_y - y) * M_PI / 180.0 / 8.0;
+    if (y_rad > M_PI / 2.0)
+        y_rad = M_PI / 2.0 - 0.01;
+    if (y_rad < -M_PI / 2.0)
+        y_rad = -M_PI / 2.0 + 0.01;
+}
+
+void draging(int x, int y)
 {
     glutWarpPointer(mouse_x, mouse_y);
     glutSetCursor(GLUT_CURSOR_NONE);
@@ -714,7 +876,7 @@ void Wavelet2d(double data[256][256], double amp)
             if (z > 0)
                 z_val = 1.0 - 3.0 * (dz * dz) + 2.0 * (dz * dz * dz);
             else
-                x_val = 1.0 - 3.0 * (dz * dz) - 2.0 * (dz * dz * dz);
+                z_val = 1.0 - 3.0 * (dz * dz) - 2.0 * (dz * dz * dz);
             data[x+128][z+128] = x_val * z_val * amp;
         }
     }
@@ -812,7 +974,7 @@ void PerlinNoize2d(int data[16][16], int chunk_xpos, int chunk_zpos, int use_see
     double dx, dz;
 
     // Wavelet function
-    Wavelet2d(C, 256.0);
+    Wavelet2d(C, 128.0);
 
     // set seed value
     if (use_seed == 1)
