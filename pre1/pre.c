@@ -119,9 +119,9 @@ double block_hardness[16][6] = {
     };
 
 int block_breaker[16] = {0, 2, 2, 1, 1, 1, 1, 1, 0, 0, 3, 4, 3, 3, 1, 0};
-int canget[16] = {0, 0, 0, 1, 1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0};
+int canget[16] = {0, 0, 0, 1, 1, 2, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0};
 
-double hungry_time = 1.0;
+double hungry_time = 4.0;
 double hungry = 0.0;
 
 double eating_time = 0.0;
@@ -143,7 +143,7 @@ double gold_create_rate = 0.001;
 double iron_create_rate = 0.005;
 double coal_create_rate = 0.01;
 double wood_create_rate[2] = {0.01, 0.1};
-double apple_drop_rate = 0.05;
+double apple_drop_rate = 0.1;
 int apple_hungry = 4;
 double apple_hide_hungry = 2.4;
 
@@ -299,7 +299,7 @@ int recipe22[7][7] = {
     {12, 12, 12, 12, 13, 1, -1}, // craft table
     {12, 0, 12, 0, 1025, 4, -1}, // bar patern1
     {0, 12, 0, 12, 1025, 4, -1}  // bar patern2
-};                               // bar patern2
+};
 
 // recipe33                ip   ip   ip   ip   ip   ip   ip   ip   ip   op op   db
 int recipe33[60][12] = {
@@ -326,7 +326,7 @@ int recipe33[60][12] = {
     {12, 12, 12, 0, 1025, 0, 0, 1025, 0, 1026, 1, 59}, //     ork pickaxe
     {3, 3, 3, 0, 1025, 0, 0, 1025, 0, 1027, 1, 131},   //    rock pickaxe
     {5, 5, 5, 0, 1025, 0, 0, 1025, 0, 1028, 1, 250},   //    iron pickaxe
-    {6, 6, 6, 0, 1025, 0, 0, 1025, 0, 1039, 1, 32},    //    gold pickaxe
+    {6, 6, 6, 0, 1025, 0, 0, 1025, 0, 1029, 1, 32},    //    gold pickaxe
     {7, 7, 7, 0, 1025, 0, 0, 1025, 0, 1030, 1, 1561},  // diamond pickaxe
     {12, 0, 0, 1025, 0, 0, 1025, 0, 0, 1031, 1, 59},   //     ork shovel pattern 1
     {0, 12, 0, 0, 1025, 0, 0, 1025, 0, 1031, 1, 59},   //     ork shovel pattern 2
@@ -774,15 +774,11 @@ void render(void)
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
-            printf("successA");
-            fflush(stdout);
             while(*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) == 0)
             {
                 player_y -= 1.0;
                 player_block_y --;
             }
-            printf("successB");
-            fflush(stdout);
             resporn_player_y = player_y;
             scene = 3;
         }
@@ -851,11 +847,14 @@ void render(void)
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     SaveChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
+            SaveItem(player_bag);
+            SaveStatus(player_status);
             player_pre_loadchunk_x = 0;
             player_pre_loadchunk_z = 0;
-            next_player_x = resporn_player_x;
+            player_x = resporn_player_x;
             next_player_x = resporn_player_x;
             player_y = resporn_player_y;
+            player_z = resporn_player_z;
             next_player_z = resporn_player_z;
             *(player_status) = 20;
             *(player_status + 1) = 18;
@@ -912,6 +911,8 @@ void render(void)
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     SaveChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
+            SaveItem(player_bag);
+            SaveStatus(player_status);
             player_pre_chunk_x = player_chunk_x;
             player_pre_loadchunk_x = player_pre_chunk_x - 8;
             if (player_pre_loadchunk_x < 0)
@@ -1157,7 +1158,7 @@ void render(void)
                                 }
                             }
                         }
-                        else if ((block_breaker[tmp] != 1 && tmp != 11) || (block_breaker[tmp] == 1 && canget[tmp] <= pickle_type))
+                        else if ((block_breaker[tmp] != 1 && tmp != 11) || (block_breaker[tmp] == 1 && canget[tmp] <= pickle_type && pickle_type != 4) || (block_breaker[tmp] == 1 && canget[tmp] <= 1 && pickle_type == 4))
                         {
                             for (int i = 0; i < 36; i++)
                             {
@@ -1171,7 +1172,7 @@ void render(void)
                         }
                         *(chunk + (dig_search_after_chunk_x - player_pre_loadchunk_x) * 1114112 + (dig_search_after_chunk_z - player_pre_loadchunk_z) * 65536 + (dig_search_after_local_x)*4096 + (int)(dig_search_after_y)*16 + dig_search_after_local_z) = 0;
                         hungry += 0.025;
-                        if ((block_breaker[tmp] == 1 && canget[tmp] <= pickle_type) || (block_breaker[tmp] == 2 && shovel_type != 0) || (block_breaker[tmp] == 3 && axe_type != 0))
+                        if ((block_breaker[tmp] == 1 && canget[tmp] <= pickle_type && pickle_type != 4) || (block_breaker[tmp] == 1 && canget[tmp] <= 1 && pickle_type == 4) || (block_breaker[tmp] == 2 && shovel_type != 0) || (block_breaker[tmp] == 3 && axe_type != 0))
                             if (*(player_bag + 3 * debugmode + 2) != -1)
                             {
                                 *(player_bag + 3 * debugmode + 2) -= 1;
@@ -6265,8 +6266,6 @@ void CreateChunk(int chunk_x, int chunk_z)
         }
     }
     SaveChunk(onechunk3d, i, j);
-    printf("\rcreated chunk: %d, %d (%5.2lf%%)", i, j, (double)(64 * i + j + 1) / 4096.0 * 100.0);
-    fflush(stdout);
     free(onechunk3d);
     free(onechunk2d);
     free(onechunk1d_x);
