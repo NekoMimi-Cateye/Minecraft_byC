@@ -1,5 +1,6 @@
-data/.
 pre.exe
 pre.o
 pre.exe.stackdump
 TODO.md
+recipetodat.c
+rtd.exe

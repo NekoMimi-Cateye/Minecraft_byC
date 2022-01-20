@@ -1,4 +1,3 @@
-/* includes */
 #include <GL/glut.h>
 #include <GL/glpng.h>
 #include <stdio.h>
@@ -6,36 +5,26 @@
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
-
-/*define*/
 #define WORLD_CHUNK 64
 #define DRAW_DIST 8
-
-/* functions */
-// Wavelet
 void Wavelet1d(double[256], double);
 void Wavelet2d(double[256][256], double);
-// PerlinNoize
 void PerlinNoize1d(double *, int, int, int, unsigned int);
 void PerlinNoize2di(int *, int, int, int, unsigned int, int);
 void PerlinNoize2dd(double *, int, int, int, unsigned int, int);
-// World Create
 void CreateChunk(int, int);
-// Save/Load
 void SaveChunk(int *, int, int);
 void LoadChunk(int *, int, int);
 void LoadItem(int *);
 void SaveItem(int *);
 void SaveStatus(int *);
 void LoadStatus(int *);
-// DrawItemBoxItems
+void LoadRecipe22(int *);
+void LoadRecipe33(int *);
 void DrawTexBlock2d(int, int, double, double);
 void DrawTexItem(int, int, double, double, double, double);
-// DrawPlayer
 void DrawPlayer(void);
-// function of Jump velocity
 double JumpVelocity(double, double, double, int);
-// for GLUT
 void render(void);
 void reshape(int, int);
 void timer(int);
@@ -44,11 +33,10 @@ void keyboardup(unsigned char, int, int);
 void mouse(int, int, int, int);
 void motion(int, int);
 void draging(int, int);
-void special(int, int, int);
 void specialup(int, int, int);
-
-/* valiables */
-// create
+void DrawRect(int, int, int, int);
+void ClickItemBag(int);
+void SwapCursorToItemBag(int);
 double *biome;
 double *diamond_rate;
 double *gold_rate;
@@ -57,47 +45,71 @@ double *coal_rate;
 double *wood_rate;
 char *wood_put;
 double *onechunk1d_y;
-
 unsigned int SEED_NUM = 0;
 int seed_length=0;
 char seed_str[20]={0};
-
-// player position info
 double player_x = 136.0;
 double player_y = 255.0;
 double player_z = 136.0;
-
-double resporn_player_x = 136.0;
-double resporn_player_y = 255.0;
-double resporn_player_z = 136.0;
-
 int player_block_x = 136;
 int player_block_y = 255;
 int player_block_z = 136;
-
-int player_pre_loadchunk_x = 0;
-int player_pre_loadchunk_z = 0;
-
-int player_pre_chunk_x = 8;
-int player_pre_chunk_z = 8;
-
-int player_pre_block_y;
-
 int player_chunk_x = 8;
 int player_chunk_y = 5;
 int player_chunk_z = 8;
-
 int player_local_x = 8;
 int player_local_y = 6;
 int player_local_z = 8;
-
-int view_block_x, view_block_y, view_block_z;
-int view_chunk_x, view_chunk_y, view_chunk_z;
-int view_local_x, view_local_y, view_local_z;
-int next_view_block_x, next_view_block_y, next_view_block_z;
-int next_view_chunk_x, next_view_chunk_y, next_view_chunk_z;
-int next_view_local_x, next_view_local_y, next_view_local_z;
-
+int player_pre_loadchunk_x = 0;
+int player_pre_loadchunk_z = 0;
+int player_pre_chunk_x = 8;
+int player_pre_chunk_z = 8;
+int player_pre_block_y;
+double resporn_player_x = 136.0;
+double resporn_player_y = 255.0;
+double resporn_player_z = 136.0;
+int view_block_x;
+int view_block_y;
+int view_block_z;
+int view_chunk_x;
+int view_chunk_y;
+int view_chunk_z;
+int view_local_x;
+int view_local_y;
+int view_local_z;
+int next_view_block_x;
+int next_view_block_y;
+int next_view_block_z;
+int next_view_chunk_x;
+int next_view_chunk_y;
+int next_view_chunk_z;
+int next_view_local_x;
+int next_view_local_y;
+int next_view_local_z;
+int dig_tag = 0;
+double player_dig_speed = 0.05;
+double dig_search_before_x;
+double dig_search_before_y;
+double dig_search_before_z;
+double dig_search_after_x;
+double dig_search_after_y;
+double dig_search_after_z;
+int dig_search_before_block_x;
+int dig_search_before_block_z;
+int dig_search_before_chunk_x;
+int dig_search_before_chunk_z;
+int dig_search_before_local_x;
+int dig_search_before_local_z;
+int dig_search_after_block_x;
+int dig_search_after_block_z;
+int dig_search_after_chunk_x;
+int dig_search_after_chunk_z;
+int dig_search_after_local_x;
+int dig_search_after_local_z;
+int dig_now_x;
+int dig_now_y;
+int dig_now_z;
+int dig_flag = 0;
 double dig_hardness = 100.0;
 double block_hardness[16][6] = {
     {0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
@@ -117,158 +129,69 @@ double block_hardness[16][6] = {
     {17.5, 2.65, 1.35, 0.90, 0.45, 0.70},
     {0.45, 0.00, 0.00, 0.00, 0.00, 0.00},
     };
-
 int block_breaker[16] = {0, 2, 2, 1, 1, 1, 1, 1, 0, 0, 3, 4, 3, 3, 1, 0};
-int canget[16] = {0, 0, 0, 1, 1, 2, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0};
-
-double hungry_time = 4.0;
-double hungry = 0.0;
-
-double eating_time = 0.0;
-double eat_time = 1.0;
-
-int no_eat = 0;
-double no_eating_time = 0.0;
-double no_eat_time = 1.0;
-
-int full_eat = 0;
-double full_eating_time = 0.0;
-double full_eat_time = 1.0;
-
-int dig_tag = 0;
-double player_dig_speed = 0.075;
-
+int canget[16] = {0, 0, 0, 1, 1, 2, 3, 3, 0, 0, 0, 0, 0, 0, 1, 4};
 double diamond_create_rate = 0.001;
 double gold_create_rate = 0.001;
 double iron_create_rate = 0.005;
 double coal_create_rate = 0.01;
 double wood_create_rate[2] = {0.01, 0.1};
 double apple_drop_rate = 0.1;
+double hungry_time = 4.0;
+double hungry = 0.0;
+double eating_time = 0.0;
+double eat_time = 1.0;
+int no_eat = 0;
+double no_eating_time = 0.0;
+double no_eat_time = 1.0;
+int full_eat = 0;
+double full_eating_time = 0.0;
+double full_eat_time = 1.0;
 int apple_hungry = 4;
 double apple_hide_hungry = 2.4;
-
 double bar_length;
-
-double dig_search_before_x, dig_search_after_x, dig_search_before_y, dig_search_after_y, dig_search_before_z, dig_search_after_z;
-int dig_search_before_block_x, dig_search_before_block_z;
-int dig_search_before_chunk_x, dig_search_before_chunk_z;
-int dig_search_before_local_x, dig_search_before_local_z;
-int dig_search_after_block_x, dig_search_after_block_z;
-int dig_search_after_chunk_x, dig_search_after_chunk_z;
-int dig_search_after_local_x, dig_search_after_local_z;
-int dig_now_x = -1000, dig_now_y = -1000, dig_now_z = -1000;
-int dig_flag = 0;
-
-// Player model position info - {x_min, x_max, y_min, y_max, z_min, z_max}
-double player_model_pos_info[3][6] = {
-    {-0.1125, 0.1125, 0.1125, -0.5625, -0.1125, 0.1125},
-    {-0.1125, 0.1125, -0.825, -0.15, -0.225, 0.225},
-    {-0.225, 0.225, -0.15, 0.3, -0.225, 0.225}
-    };
-// Player model mov info - {x, y, z}
-double player_model_mov_info[4][3] = {
-    {0.0, -0.9375, 0.1125},
-    {0.0, -0.9375, -0.1125},
-    {0.0, -0.2625, -0.3375},
-    {0.0, -0.2625, 0.3375}
-    };
-// Player model color info - {x, y, z}
-double player_model_color_info[6][3] = {
-    {0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0},
-    {0.0, 1.0, 0.0},
-    {0.0, 1.0, 0.0},
-    {0.0, 1.0, 1.0},
-    {1.0, 0.5, 0.0}
-    };
-
-// player arm(+buttom) rotation
 double arm_rad = 0.0;
 int arm_d = 1;
-// camera rotation
 double xz_rad = 0.0;
 double y_rad = 0.0;
-// mouse positioning
 int mouse_x = 0;
 int mouse_y = 0;
-// key status
 int key_state[7] = {0};
-// player constants param
+double mouse_status[2] = {-1, -1};
 double player_jump_start_velocity = 0.42;
 double player_gravity_acceleration = 0.08;
 double player_air_resistance = 0.02;
-// player jumping status
 int player_jump_tick = -1;
 double player_jump_velocity = 0.0;
-// player falling status
 int player_fall_tick = -1;
 double player_fall_velocity = 0.0;
-// map data
-double *chunkdata_x;
-double *chunkdata_y;
-double *chunkdata_z;
 int *chunk;
-int *nextchunk;
-int *map2d;
-// mouse status
-double mouse_status[3] = {-1, -1, -1};
-// for draw fps
-struct timeval start, end;
-double fps[10] = {0};
-double avg_fps;
-char fps_str[20] = "fps: calcutating...";
-int fps_count = 0;
-// camera mode
-int camera_perspective_mode = 0;
-// for draw info
-char pos_str[40];
-char block_str[40];
-char chunk_str[40];
-char keystate_str[60];
-char loadpos_str[60];
-char loadposc_str[60];
-char dig_str[30];
-char items_str[3];
-char ht_str[30];
-char hht_str[30];
-char net_str[30];
-char het_str[30];
-char infomation[60];
-// for debug
-int flag = 0;
-int debugmode = 0;
-// status
 int *player_bag;
 int *player_status;
 double player_hide_hungry = 0;
-//scene
+struct timeval start, end;
+double fps[10] = {0};
+double avg_fps;
+int fps_count = 0;
+char debug_str[21][60] = {0};
+int camera_perspective_mode = 0;
+int choise = 0;
 int scene = 0;
-
-//for loading
 int load_counter = 0;
-
-// pause
-int debug = 0;
 int pause = 0;
-int enventory = 0;
+int debug = 0;
+int enventry = 0;
 int craft = 0;
 int fire = 0;
 int menu = 0;
-
-// swap
 int dragging_item[4] = {-1, 0, 0, -1};
-
-// craft itembox 4 x {etr-id, Bid, NoB, durability}
 int craft_itembox[4][4] = {
     {-1, 0, 0, -1},
     {-1, 0, 0, -1},
     {-1, 0, 0, -1},
     {-1, 0, 0, -1}
     };
-// crafted item 1 x {Bid, NoB, durability}
 int crafted_item[3] = {0, 0, -1};
-
-// craft itembox 9 x {etr-id, Bid, NoB, durability}
 int bigcraft_itembox[9][4] = {
     {-1, 0, 0, -1},
     {-1, 0, 0, -1},
@@ -280,152 +203,60 @@ int bigcraft_itembox[9][4] = {
     {-1, 0, 0, -1},
     {-1, 0, 0, -1}
     };
-// crafted item 1 x {Bid, NoB, durability}
 int bigcrafted_item[3] = {0, 0, -1};
-
-// funrnace material {etr-id, Bid, NoB, durability}
 int material_item[4] = {-1, 0, 0, -1};
-// funrnace fuel {etr-id, Bid, NoB, durability}
 int fuel_item[4] = {-1, 0, 0, -1};
-// funrnace product {Bid, NoB, durability}
 int product_item[3] = {0, 0, -1};
-
-// recipe22            ip ip ip ip   op op  db
-int recipe22[7][7] = {
-    {10, 0, 0, 0, 12, 4, -1},    // lamber patern1
-    {0, 10, 0, 0, 12, 4, -1},    // lamber patern2
-    {0, 0, 10, 0, 12, 4, -1},    // lamber patern3
-    {0, 0, 0, 10, 12, 4, -1},    // lamber patern4
-    {12, 12, 12, 12, 13, 1, -1}, // craft table
-    {12, 0, 12, 0, 1025, 4, -1}, // bar patern1
-    {0, 12, 0, 12, 1025, 4, -1}  // bar patern2
-};
-
-// recipe33                ip   ip   ip   ip   ip   ip   ip   ip   ip   op op   db
-int recipe33[60][12] = {
-    {10, 0, 0, 0, 0, 0, 0, 0, 0, 12, 4, -1},           // lamber patern1
-    {0, 10, 0, 0, 0, 0, 0, 0, 0, 12, 4, -1},           // lamber patern2
-    {0, 0, 10, 0, 0, 0, 0, 0, 0, 12, 4, -1},           // lamber patern3
-    {0, 0, 0, 10, 0, 0, 0, 0, 0, 12, 4, -1},           // lamber patern4
-    {0, 0, 0, 0, 10, 0, 0, 0, 0, 12, 4, -1},           // lamber patern5
-    {0, 0, 0, 0, 0, 10, 0, 0, 0, 12, 4, -1},           // lamber patern6
-    {0, 0, 0, 0, 0, 0, 10, 0, 0, 12, 4, -1},           // lamber patern7
-    {0, 0, 0, 0, 0, 0, 0, 10, 0, 12, 4, -1},           // lamber patern8
-    {0, 0, 0, 0, 0, 0, 0, 0, 10, 12, 4, -1},           // lamber patern9
-    {0, 0, 0, 0, 12, 12, 0, 12, 12, 13, 1, -1},        // craft table patern1
-    {0, 0, 0, 12, 12, 0, 12, 12, 0, 13, 1, -1},        // craft table patern2
-    {0, 12, 12, 0, 12, 12, 0, 0, 0, 13, 1, -1},        // craft table patern3
-    {12, 12, 0, 12, 12, 0, 0, 0, 0, 13, 1, -1},        // craft table patern4
-    {3, 3, 3, 3, 0, 3, 3, 3, 3, 14, 1, -1},            // furnace
-    {12, 0, 0, 12, 0, 0, 0, 0, 0, 1025, 4, -1},        // bar patern1
-    {0, 12, 0, 0, 12, 0, 0, 0, 0, 1025, 4, -1},        // bar patern2
-    {0, 0, 12, 0, 0, 12, 0, 0, 0, 1025, 4, -1},        // bar patern3
-    {0, 0, 0, 12, 0, 0, 12, 0, 0, 1025, 4, -1},        // bar patern4
-    {0, 0, 0, 0, 12, 0, 0, 12, 0, 1025, 4, -1},        // bar patern5
-    {0, 0, 0, 0, 0, 12, 0, 0, 12, 1025, 4, -1},        // bar patern6
-    {12, 12, 12, 0, 1025, 0, 0, 1025, 0, 1026, 1, 59}, //     ork pickaxe
-    {3, 3, 3, 0, 1025, 0, 0, 1025, 0, 1027, 1, 131},   //    rock pickaxe
-    {5, 5, 5, 0, 1025, 0, 0, 1025, 0, 1028, 1, 250},   //    iron pickaxe
-    {6, 6, 6, 0, 1025, 0, 0, 1025, 0, 1029, 1, 32},    //    gold pickaxe
-    {7, 7, 7, 0, 1025, 0, 0, 1025, 0, 1030, 1, 1561},  // diamond pickaxe
-    {12, 0, 0, 1025, 0, 0, 1025, 0, 0, 1031, 1, 59},   //     ork shovel pattern 1
-    {0, 12, 0, 0, 1025, 0, 0, 1025, 0, 1031, 1, 59},   //     ork shovel pattern 2
-    {0, 0, 12, 0, 0, 1025, 0, 0, 1025, 1031, 1, 59},   //     ork shovel pattern 3
-    {3, 0, 0, 1025, 0, 0, 1025, 0, 0, 1032, 1, 131},   //    rock shovel pattern 1
-    {0, 3, 0, 0, 1025, 0, 0, 1025, 0, 1032, 1, 131},   //    rock shovel pattern 2
-    {0, 0, 3, 0, 0, 1025, 0, 0, 1025, 1032, 1, 131},   //    rock shovel pattern 3
-    {5, 0, 0, 1025, 0, 0, 1025, 0, 0, 1033, 1, 250},   //    iron shovel pattern 1
-    {0, 5, 0, 0, 1025, 0, 0, 1025, 0, 1033, 1, 250},   //    iron shovel pattern 2
-    {0, 0, 5, 0, 0, 1025, 0, 0, 1025, 1033, 1, 250},   //    iron shovel pattern 3
-    {6, 0, 0, 1025, 0, 0, 1025, 0, 0, 1034, 1, 32},    //    gold shovel pattern 1
-    {0, 6, 0, 0, 1025, 0, 0, 1025, 0, 1034, 1, 32},    //    gold shovel pattern 2
-    {0, 0, 6, 0, 0, 1025, 0, 0, 1025, 1034, 1, 32},    //    gold shovel pattern 3
-    {7, 0, 0, 1025, 0, 0, 1025, 0, 0, 1035, 1, 1561},  // diamond shovel pattern 1
-    {0, 7, 0, 0, 1025, 0, 0, 1025, 0, 1035, 1, 1561},  // diamond shovel pattern 2
-    {0, 0, 7, 0, 0, 1025, 0, 0, 1025, 1035, 1, 1561},  // diamond shovel pattern 3
-    {12, 12, 0, 1025, 12, 0, 1025, 0, 0, 1036, 1, 59}, //     ork axe pattern 1
-    {12, 12, 0, 12, 1025, 0, 0, 1025, 0, 1036, 1, 59}, //     ork axe pattern 2
-    {0, 12, 12, 0, 1025, 12, 0, 1025, 0, 1036, 1, 59}, //     ork axe pattern 3
-    {0, 12, 12, 0, 12, 1025, 0, 0, 1025, 1036, 1, 59}, //     ork axe pattern 4
-    {3, 3, 0, 1025, 3, 0, 1025, 0, 0, 1037, 1, 131},   //    rock axe pattern 1
-    {3, 3, 0, 3, 1025, 0, 0, 1025, 0, 1037, 1, 131},   //    rock axe pattern 2
-    {0, 3, 3, 0, 1025, 3, 0, 1025, 0, 1037, 1, 131},   //    rock axe pattern 3
-    {0, 3, 3, 0, 3, 1025, 0, 0, 1025, 1037, 1, 131},   //    rock axe pattern 4
-    {5, 5, 0, 1025, 5, 0, 1025, 0, 0, 1038, 1, 250},   //    iron axe pattern 1
-    {5, 5, 0, 5, 1025, 0, 0, 1025, 0, 1038, 1, 250},   //    iron axe pattern 2
-    {0, 5, 5, 0, 1025, 5, 0, 1025, 0, 1038, 1, 250},   //    iron axe pattern 3
-    {0, 5, 5, 0, 5, 1025, 0, 0, 1025, 1038, 1, 250},   //    iron axe pattern 4
-    {6, 6, 0, 1025, 6, 0, 1025, 0, 0, 1039, 1, 32},    //    gold axe pattern 1
-    {6, 6, 0, 6, 1025, 0, 0, 1025, 0, 1039, 1, 32},    //    gold axe pattern 2
-    {0, 6, 6, 0, 1025, 6, 0, 1025, 0, 1039, 1, 32},    //    gold axe pattern 3
-    {0, 6, 6, 0, 6, 1025, 0, 0, 1025, 1039, 1, 32},    //    gold axe pattern 4
-    {7, 7, 0, 1025, 7, 0, 1025, 0, 0, 1040, 1, 1561},  // diamond axe pattern 1
-    {7, 7, 0, 7, 1025, 0, 0, 1025, 0, 1040, 1, 1561},  // diamond axe pattern 2
-    {0, 7, 7, 0, 1025, 7, 0, 1025, 0, 1040, 1, 1561},  // diamond axe pattern 3
-    {0, 7, 7, 0, 7, 1025, 0, 0, 1025, 1040, 1, 1561},  // diamond axe pattern 4
-    };
-
-// furnace
+int recipe22_num = 7;
+int* recipe22;
+int recipe33_num = 60;
+int* recipe33;
 int furnace_ope = 0;
 double furnace_opetime = 0;
 double furnace_createtime = 10.0;
 double furnace_fueltime = 0.0;
 double furnace_fuelnow = 100.0;
-double furnace_fueltime_block[17] = {0.0, 0.0, 0.0, 0.0, 80.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 0.0, 15.0, 15.0, 0.0, 0.0, 0.0};
-double furnace_fueltime_items[17] = {5.0, 10.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+double furnace_fueltime_block[17] = 
+    {0.0, 0.0, 0.0, 0.0, 80.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 0.0, 15.0, 15.0, 0.0, 0.0, 0.0};
+double furnace_fueltime_items[17] = 
+    {5.0, 10.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 int furnace_creating = -1;
-// recipe (furnace) type: {material, product}
+int furnace_recipe_num = 1;
 double furnace_recipe[1][2] = {{2, 15}};
-
-// durability
-int durability_list[15] = {59, 131, 250, 32, 1561, 59, 131, 250, 32, 1561, 59, 131, 250, 32, 1561};
-int durability_empty_list[15] = {3, 6, 10, 2, 61, 3, 6, 10, 2, 61, 3, 6, 10, 2, 61};
-
-// texture
+int durability_list[15] = 
+    {59, 131, 250, 32, 1561, 59, 131, 250, 32, 1561, 59, 131, 250, 32, 1561};
+int durability_empty_list[15] =
+    {3, 6, 10, 2, 61, 3, 6, 10, 2, 61, 3, 6, 10, 2, 61};
+char items_str[3];
 GLuint img;
 pngInfo info;
 GLuint img2;
 pngInfo info2;
 
-// pickle code
-int pickle_ci[5] = {12, 3, 5, 6, 7};
-
 int main(int argc, char **argv)
 {
-    // require 272.25MB
     chunk = (int *)malloc(sizeof(int) * (2 * DRAW_DIST + 1) * (2 * DRAW_DIST + 1) * 16 * 256 * 16);
-    nextchunk = (int *)malloc(sizeof(int) * (2 * DRAW_DIST + 1) * (2 * DRAW_DIST + 1) * 16 * 256 * 16);
-    map2d = (int *)malloc(sizeof(int) * (2 * DRAW_DIST + 1) * (2 * DRAW_DIST + 1) * 16 * 16);
-    chunkdata_x = (double *)malloc(sizeof(double) * (2 * DRAW_DIST + 1) * 16);
-    chunkdata_y = (double *)malloc(sizeof(double) * (2 * DRAW_DIST + 1) * 16);
-    chunkdata_z = (double *)malloc(sizeof(double) * (2 * DRAW_DIST + 1) * 16);
     player_bag = (int *)malloc(sizeof(int) * 108);
     player_status = (int *)malloc(sizeof(int) * 2);
-    // Initialization
+    recipe22 = (int *)malloc(sizeof(int) * recipe22_num*7);
+    recipe33 = (int *)malloc(sizeof(int) * recipe33_num*12);
+    LoadRecipe22(recipe22);
+    LoadRecipe33(recipe33);
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_ALPHA);
     glutInitWindowSize(640, 480);
-
-    // Create Window
     glutEnterGameMode();
-
-    // ClearColor
     glClearColor(0.0, 1.0, 1.0, 1.0);
-
-    // Functions
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glutDisplayFunc(render);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
     glutKeyboardUpFunc(keyboardup);
-    glutSpecialFunc(special);
     glutSpecialUpFunc(specialup);
     glutMouseFunc(mouse);
     glutMotionFunc(draging);
     glutPassiveMotionFunc(motion);
     glutTimerFunc(100, timer, 0);
-
-    // load image
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     img = pngBind("img/texture.png", PNG_NOMIPMAP, PNG_ALPHA, &info, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     img2 = pngBind("img/logo.png", PNG_NOMIPMAP, PNG_ALPHA, &info2, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     glutMainLoop();
@@ -434,11 +265,10 @@ int main(int argc, char **argv)
 
 void render(void)
 {
+    int w = glutGet(GLUT_WINDOW_WIDTH);
+    int h = glutGet(GLUT_WINDOW_HEIGHT);
     if (scene==0)
     {
-        // window size
-        int w = glutGet(GLUT_WINDOW_WIDTH);
-        int h = glutGet(GLUT_WINDOW_HEIGHT);
         int i=0, j=0;
         char title_btn1[10];
         char title_btn2[10];
@@ -446,9 +276,7 @@ void render(void)
         sprintf(title_btn1, "COUNTINUE");
         sprintf(title_btn2, "NEWGAME");
         sprintf(title_btn3, "QUIT");
-        // Clear
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // Camera setting
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -513,23 +341,11 @@ void render(void)
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glPopMatrix();
-        // Btn
         glColor3f(0.5, 0.5, 0.5);
         glBegin(GL_QUADS);
-            glVertex2i(w/2-128, h/2+96);
-            glVertex2i(w/2+128, h/2+96);
-            glVertex2i(w/2+128, h/2+32);
-            glVertex2i(w/2-128, h/2+32);
-
-            glVertex2i(w/2-128, h/2+192);
-            glVertex2i(w/2+128, h/2+192);
-            glVertex2i(w/2+128, h/2+128);
-            glVertex2i(w/2-128, h/2+128);
-
-            glVertex2i(w/2-128, h/2+288);
-            glVertex2i(w/2+128, h/2+288);
-            glVertex2i(w/2+128, h/2+224);
-            glVertex2i(w/2-128, h/2+224);
+            DrawRect(w/2-128, w/2+128, h/2+32, h/2+96);
+            DrawRect(w/2-128, w/2+128, h/2+128, h/2+192);
+            DrawRect(w/2-128, w/2+128, h/2+224, h/2+288);
         glEnd();
         glColor3f(1, 1, 1);
         glRasterPos2i(w/2-54, h/2+64+12);
@@ -548,19 +364,14 @@ void render(void)
     }
     if (scene == 1)
     {
-        // window size
-        int w = glutGet(GLUT_WINDOW_WIDTH);
-        int h = glutGet(GLUT_WINDOW_HEIGHT);
         int i=0, j=0;
-        char inputseed[25];
+        char inputseed[30];
         char back_str[5];
         char create_str[15];
         sprintf(inputseed, "INPUT SEED NUMBER (MAX:25)");
         sprintf(back_str, "Back");
         sprintf(create_str, "Create World");
-        // Clear
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // Camera setting
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -614,25 +425,12 @@ void render(void)
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glPopMatrix();
-        // gage
         glColor3f(0.5, 0.5, 0.5);
         glBegin(GL_QUADS);
-            glVertex2i(w/4, h/2+32);
-            glVertex2i(3*w/4, h/2+32);
-            glVertex2i(3*w/4, h/2-32);
-            glVertex2i(w/4, h/2-32);
-
-            glVertex2i(w/4, h/2+128);
-            glVertex2i(3*w/4, h/2+128);
-            glVertex2i(3*w/4, h/2+64);
-            glVertex2i(w/4, h/2+64);
+            DrawRect(w/4, 3*w/4, h/2-32, h/2+32);
+            DrawRect(w/4, 3*w/4, h/2+64, h/2+128);
             if (seed_length > 0)
-            {
-                glVertex2i(w/4, h/2+224);
-                glVertex2i(3*w/4, h/2+224);
-                glVertex2i(3*w/4, h/2+160);
-                glVertex2i(w/4, h/2+160);
-            }
+                DrawRect(w/4, 3*w/4, h/2+160, h/2+224);
         glEnd();
         glColor3f(1, 1, 1);
         glRasterPos2i(w/2-156, h/2+12);
@@ -663,9 +461,6 @@ void render(void)
     }
     else if (scene == 2)
     {
-        // window size
-        int w = glutGet(GLUT_WINDOW_WIDTH);
-        int h = glutGet(GLUT_WINDOW_HEIGHT);
         int i=0, j=0;
         char sentence[18];
         double percentage = (double)(load_counter) / (double)(WORLD_CHUNK*WORLD_CHUNK);
@@ -675,9 +470,7 @@ void render(void)
             sprintf(sentence, "Creating World ...");
         else
             sprintf(sentence, " Loading World ...");
-        // Clear
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // Camera setting
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -731,20 +524,13 @@ void render(void)
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glPopMatrix();
-        // gage
         glColor3f(0.5, 0.5, 0.5);
         glBegin(GL_QUADS);
-            glVertex2i(w/4, h/2+96);
-            glVertex2i(3*w/4, h/2+96);
-            glVertex2i(3*w/4, h/2+32);
-            glVertex2i(w/4, h/2+32);
+            DrawRect(w/4, 3*w/4, h/2+32, h/2+96);
         glEnd();
         glColor3f(1, 1, 1);
         glBegin(GL_QUADS);
-            glVertex2i(w/4, h/2+96);
-            glVertex2i(w/4+per_length, h/2+96);
-            glVertex2i(w/4+per_length, h/2+32);
-            glVertex2i(w/4, h/2+32);
+            DrawRect(w/4, w/4+per_length, h/2+32, h/2+96);
         glEnd();
         glColor3f(1, 1, 1);
         glRasterPos2i(w/2-108, h/2+12);
@@ -774,7 +560,9 @@ void render(void)
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
-            while(*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) == 0)
+            SaveItem(player_bag);
+            SaveStatus(player_status);
+            while(*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 2.5)) * 16 + player_local_z) == 0)
             {
                 player_y -= 1.0;
                 player_block_y --;
@@ -789,6 +577,7 @@ void render(void)
         double speed = 0.21;
         double sneek_speed = 0.304;
         double dash_speed = 1.3;
+        double dash_jump_speed = 1.5;
         double next_player_x = player_x, next_player_z = player_z;
         int next_player_block_x, next_player_block_z;
         int next_player_chunk_x, next_player_chunk_z;
@@ -796,28 +585,14 @@ void render(void)
         int pickle_type = 0;
         int shovel_type = 0;
         int axe_type = 0;
-
         if (key_state[4] == 1)
             speed *= sneek_speed;
         else if (key_state[5] == 1 && *(player_status + 1) > 6)
-            speed *= dash_speed;
-        if (key_state[0] == 1 || key_state[1] == 1 || key_state[2] == 1 || key_state[3] == 1)
         {
-            arm_rad += (24.0 * (double)arm_d) * M_PI / 360.0;
-            if (arm_rad > M_PI / 3.0)
-            {
-                arm_rad = M_PI / 3.0;
-                arm_d *= -1;
-            }
-            if (arm_rad < -M_PI / 3.0)
-            {
-                arm_rad = -M_PI / 3.0;
-                arm_d *= -1;
-            }
-        }
-        else
-        {
-            arm_rad = 0.0;
+            if (player_jump_tick == -1)
+                speed *= dash_speed;
+            else
+                speed *= dash_jump_speed;
         }
         if (pause == 0)
         {
@@ -841,71 +616,31 @@ void render(void)
                 next_player_x -= speed * sin(xz_rad);
                 next_player_z += speed * cos(xz_rad);
             }
-        }
-        if (player_y < -2.0 || *(player_status) <= 0)
-        {
-            for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
-                for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
-                    SaveChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
-            SaveItem(player_bag);
-            SaveStatus(player_status);
-            player_pre_loadchunk_x = 0;
-            player_pre_loadchunk_z = 0;
-            player_x = resporn_player_x;
-            next_player_x = resporn_player_x;
-            player_y = resporn_player_y;
-            player_z = resporn_player_z;
-            next_player_z = resporn_player_z;
-            *(player_status) = 20;
-            *(player_status + 1) = 18;
-            for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
-                for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
-                    LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
-        }
-        if (key_state[6] == 1 && player_jump_tick == -1 && player_fall_tick == -1 && pause == 0)
-        {
-            player_jump_tick = 0;
-            hungry += 0.025;
-            player_pre_block_y = player_block_y;
-        }
-
-        if (pause == 0)
-        {
             if (key_state[0] == 1 || key_state[1] == 1 || key_state[2] == 1 || key_state[3] == 1)
             {
-                if (key_state[4] == 1)
-                    if (player_jump_tick == -1)
-                        hungry += 0.02;
-                    else
-                        hungry += 0.16;
+                if (key_state[5] == 1 && *(player_status + 1) > 6)
+                    hungry += 0.01;
                 else
-                    hungry += 0.002;
+                    hungry += 0.001;
             }
         }
-
         next_player_block_x = (int)next_player_x;
         next_player_chunk_x = (int)next_player_block_x / 16;
         next_player_local_x = (int)next_player_block_x % 16;
-        if (*(chunk + (next_player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (next_player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) == 0 && *(chunk + (next_player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (next_player_local_x)*4096 + ((int)(player_y - 0.5)) * 16 + player_local_z) == 0 && next_player_x > 16.0 && next_player_x < 16.0 * (WORLD_CHUNK - 1))
+        next_player_block_z = (int)next_player_z;
+        next_player_chunk_z = (int)next_player_block_z / 16;
+        next_player_local_z = (int)next_player_block_z % 16;
+        if (*(chunk + (next_player_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_player_chunk_z - player_pre_loadchunk_z) * 65536 + (next_player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + next_player_local_z) == 0 && *(chunk + (next_player_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_player_chunk_z - player_pre_loadchunk_z) * 65536 + (next_player_local_x)*4096 + ((int)(player_y - 0.5)) * 16 + next_player_local_z) == 0 && next_player_x > 16.0 && next_player_x < 16.0 * (WORLD_CHUNK - 1) && next_player_z > 16.0 && next_player_z < 16.0 * (WORLD_CHUNK - 1))
         {
             player_x = next_player_x;
             player_block_x = next_player_block_x;
             player_chunk_x = next_player_chunk_x;
             player_local_x = next_player_local_x;
-        }
-
-        next_player_block_z = (int)next_player_z;
-        next_player_chunk_z = (int)next_player_block_z / 16;
-        next_player_local_z = (int)next_player_block_z % 16;
-        if (*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + next_player_local_z) == 0 && *(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 0.5)) * 16 + next_player_local_z) == 0 && next_player_z > 16.0 && next_player_z < 16.0 * (WORLD_CHUNK - 1))
-        {
             player_z = next_player_z;
             player_block_z = next_player_block_z;
             player_chunk_z = next_player_chunk_z;
             player_local_z = next_player_local_z;
         }
-
-        // reload chunk
         if (player_chunk_x - player_pre_chunk_x >= 4 || player_chunk_x - player_pre_chunk_x <= -4 || player_chunk_z - player_pre_chunk_z >= 4 || player_chunk_z - player_pre_chunk_z <= -4)
         {
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
@@ -914,13 +649,13 @@ void render(void)
             SaveItem(player_bag);
             SaveStatus(player_status);
             player_pre_chunk_x = player_chunk_x;
-            player_pre_loadchunk_x = player_pre_chunk_x - 8;
+            player_pre_loadchunk_x = player_pre_chunk_x - DRAW_DIST;
+            player_pre_chunk_z = player_chunk_z;
+            player_pre_loadchunk_z = player_pre_chunk_z - DRAW_DIST;
             if (player_pre_loadchunk_x < 0)
                 player_pre_loadchunk_x = 0;
             if (player_pre_loadchunk_x > WORLD_CHUNK - (2 * DRAW_DIST + 1))
                 player_pre_loadchunk_x = WORLD_CHUNK - (2 * DRAW_DIST + 1);
-            player_pre_chunk_z = player_chunk_z;
-            player_pre_loadchunk_z = player_pre_chunk_z - 8;
             if (player_pre_loadchunk_z < 0)
                 player_pre_loadchunk_z = 0;
             if (player_pre_loadchunk_z > WORLD_CHUNK - (2 * DRAW_DIST + 1))
@@ -929,126 +664,43 @@ void render(void)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     LoadChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
         }
-        while (1)
+        if (key_state[0] == 1 || key_state[1] == 1 || key_state[2] == 1 || key_state[3] == 1)
         {
-            if (player_hide_hungry > 0)
+            arm_rad += (24.0 * (double)arm_d) * M_PI / 360.0;
+            if (arm_rad > M_PI / 3.0)
             {
-                if (player_hide_hungry > hungry)
-                {
-                    player_hide_hungry -= hungry;
-                    hungry = 0.0;
-                }
+                arm_rad = M_PI / 3.0;
+                arm_d *= -1;
+            }
+            if (arm_rad < -M_PI / 3.0)
+            {
+                arm_rad = -M_PI / 3.0;
+                arm_d *= -1;
+            }
+        }
+        else
+        {
+            arm_rad = 0.0;
+        }
+        if (key_state[6] == 1 && player_jump_tick == -1 && player_fall_tick == -1 && pause == 0)
+        {
+            player_jump_tick = 0;
+            if (key_state[0] == 1 || key_state[1] == 1 || key_state[2] == 1 || key_state[3] == 1)
+            {
+                if (key_state[5] == 1 && *(player_status + 1) > 6)
+                    hungry += 0.08;
                 else
-                {
-                    player_hide_hungry = 0.0;
-                    hungry -= player_hide_hungry;
-                }
+                    hungry += 0.02;
             }
-            if (hungry < hungry_time)
-                break;
             else
-            {
-                if (*(player_status + 1) > 0)
-                {
-                    *(player_status + 1) -= 1;
-                }
-                hungry -= hungry_time;
-            }
+                hungry += 0.02;
+            player_pre_block_y = player_block_y;
         }
-
-        if (*(player_status + 1) > 0)
-        {
-            no_eat = 0;
-        }
-        else
-        {
-            no_eat = 1;
-        }
-        if (no_eat == 1)
-        {
-            no_eating_time += 0.05;
-            if (no_eating_time > no_eat_time)
-            {
-                *(player_status) -= 1;
-                no_eating_time -= no_eat_time;
-            }
-        }
-        else
-            no_eating_time = 0;
-
-        if (*(player_status + 1) < 17)
-        {
-            full_eat = 0;
-        }
-        else
-        {
-            full_eat = 1;
-        }
-        if (full_eat == 1 && *(player_status) < 20)
-        {
-            full_eating_time += 0.05;
-            if (full_eating_time > full_eat_time)
-            {
-                *(player_status) += 1;
-                full_eating_time -= full_eat_time;
-            }
-        }
-        else
-            full_eating_time = 0;
-
-        if (fps_count % 100 == 0)
-            gettimeofday(&start, NULL);
-        // window size
-        int w = glutGet(GLUT_WINDOW_WIDTH);
-        int h = glutGet(GLUT_WINDOW_HEIGHT);
-        // pickle type
-        if (*(player_bag + 3 * debugmode) >= 1026 && *(player_bag + 3 * debugmode) < 1031)
-            pickle_type = *(player_bag + 3 * debugmode) - 1025;
-        else
-            pickle_type = 0;
-        // shovel type
-        if (*(player_bag + 3 * debugmode) >= 1031 && *(player_bag + 3 * debugmode) < 1036)
-            shovel_type = *(player_bag + 3 * debugmode) - 1030;
-        else
-            shovel_type = 0;
-        // axe type
-        if (*(player_bag + 3 * debugmode) >= 1036 && *(player_bag + 3 * debugmode) < 1041)
-            axe_type = *(player_bag + 3 * debugmode) - 1035;
-        else
-            axe_type = 0;
-
-        // mouse position
-        if (pause == 0)
-        {
-            mouse_x = w / 2;
-            mouse_y = h / 2;
-        }
-
-        // y position process
         if (player_fall_tick == -1 && player_jump_tick == -1 && *(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) == 0)
         {
             player_fall_tick = 0;
             player_pre_block_y = player_block_y;
         }
-
-        if (player_fall_tick >= 0)
-        {
-            player_fall_velocity = JumpVelocity(0.0, player_gravity_acceleration, player_air_resistance, player_fall_tick);
-            player_y += player_fall_velocity;
-            player_block_y = (int)(player_y - 1.5);
-            player_fall_tick++;
-            if (*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) != 0)
-            {
-                player_y = (double)player_block_y + 2.5;
-                player_block_y = (int)(player_y - 1.5);
-                player_chunk_y = player_block_y / 16;
-                player_local_y = player_block_y % 16;
-                player_fall_tick = -1;
-                if (player_pre_block_y > player_block_y + 3)
-                    *(player_status) -= player_pre_block_y - (player_block_y + 3);
-            }
-        }
-
         if (player_jump_tick >= 0)
         {
             player_jump_velocity = JumpVelocity(player_jump_start_velocity, player_gravity_acceleration, player_air_resistance, player_jump_tick);
@@ -1075,41 +727,130 @@ void render(void)
                     *(player_status) -= (player_pre_block_y + 1) - (player_block_y + 3);
             }
         }
-
-        // EAT
-        if (mouse_status[0] == 1)
+        if (player_fall_tick >= 0)
         {
-            if (*(player_bag + 3 * debugmode) == 1041 && *(player_bag + 3 * debugmode + 1) > 0)
+            player_fall_velocity = JumpVelocity(0.0, player_gravity_acceleration, player_air_resistance, player_fall_tick);
+            player_y += player_fall_velocity;
+            player_block_y = (int)(player_y - 1.5);
+            player_fall_tick++;
+            if (*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) != 0)
             {
-                eating_time += 0.05;
-                if (eating_time > eat_time)
-                {
-                    *(player_bag + 3 * debugmode + 1) -= 1;
-                    eating_time = 0;
-                    *(player_status + 1) += apple_hungry;
-                    if (*(player_status + 1) > 18)
-                        *(player_status + 1) = 18;
-                    player_hide_hungry += apple_hide_hungry;
-                    if (player_hide_hungry > *(player_status + 1))
-                        player_hide_hungry = (double)(*(player_status + 1));
-
-                    if (*(player_bag + 3 * debugmode + 1) == 0)
-                    {
-                        *(player_bag + 3 * debugmode) = 0;
-                    }
-                }
+                player_y = (double)player_block_y + 2.5;
+                player_block_y = (int)(player_y - 1.5);
+                player_chunk_y = player_block_y / 16;
+                player_local_y = player_block_y % 16;
+                player_fall_tick = -1;
+                if (player_pre_block_y > player_block_y + 3)
+                    *(player_status) -= player_pre_block_y - (player_block_y + 3);
+            }
+        }
+        if (player_y < -2.0 || *(player_status) <= 0)
+        {
+            for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
+                for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
+                    SaveChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
+            for (int i = 0; i < 36; i++)
+            {
+                *(player_bag + 3 * i) = 0;
+                *(player_bag + 3 * i + 1) = 0;
+                *(player_bag + 3 * i + 2) = -1;
+            }
+            *(player_status) = 20;
+            *(player_status + 1) = 18;
+            SaveItem(player_bag);
+            SaveStatus(player_status);
+            player_pre_loadchunk_x = 0;
+            player_pre_loadchunk_z = 0;
+            player_x = resporn_player_x;
+            next_player_x = resporn_player_x;
+            player_y = resporn_player_y;
+            player_z = resporn_player_z;
+            next_player_z = resporn_player_z;
+            for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
+                for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
+                    LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
+        }
+        if (player_hide_hungry > 0)
+        {
+            if (player_hide_hungry > hungry)
+            {
+                player_hide_hungry -= hungry;
+                hungry = 0.0;
             }
             else
             {
-                eating_time = 0;
+                player_hide_hungry = 0.0;
+                hungry -= player_hide_hungry;
+            }
+        }
+        if (hungry >= hungry_time)
+        {
+            if (*(player_status + 1) > 0)
+                *(player_status + 1) -= 1;
+            hungry -= hungry_time;
+        }
+        if (*(player_status + 1) > 0)
+            no_eat = 0;
+        else
+            no_eat = 1;
+        if (no_eat == 1)
+        {
+            no_eating_time += 0.05;
+            if (no_eating_time > no_eat_time)
+            {
+                *(player_status) -= 1;
+                no_eating_time -= no_eat_time;
             }
         }
         else
+            no_eating_time = 0;
+        if (*(player_status + 1) < 17)
+            full_eat = 0;
+        else
+            full_eat = 1;
+        if (full_eat == 1 && *(player_status) < 20)
         {
-            eating_time = 0;
+            full_eating_time += 0.05;
+            if (full_eating_time > full_eat_time)
+            {
+                *(player_status) += 1;
+                full_eating_time -= full_eat_time;
+            }
         }
+        else
+            full_eating_time = 0;
+        if (mouse_status[0] == 1 && *(player_bag + 3 * choise) == 1041 && *(player_bag + 3 * choise + 1) > 0)
+        {
+            eating_time += 0.05;
+            if (eating_time > eat_time)
+            {
+                eating_time = 0;
+                *(player_bag + 3 * choise + 1) -= 1;
+                if (*(player_bag + 3 * choise + 1) == 0)
+                    *(player_bag + 3 * choise) = 0;
+                *(player_status + 1) += apple_hungry;
+                if (*(player_status + 1) > 18)
+                    *(player_status + 1) = 18;
+                player_hide_hungry += apple_hide_hungry;
+                if (player_hide_hungry > *(player_status + 1))
+                    player_hide_hungry = (double)(*(player_status + 1));
+            }
+        }
+        else
+            eating_time = 0;
 
-        // DIG
+        if (*(player_bag + 3 * choise) >= 1026 && *(player_bag + 3 * choise) < 1031)
+            pickle_type = *(player_bag + 3 * choise) - 1025;
+        else
+            pickle_type = 0;
+        if (*(player_bag + 3 * choise) >= 1031 && *(player_bag + 3 * choise) < 1036)
+            shovel_type = *(player_bag + 3 * choise) - 1030;
+        else
+            shovel_type = 0;
+        if (*(player_bag + 3 * choise) >= 1036 && *(player_bag + 3 * choise) < 1041)
+            axe_type = *(player_bag + 3 * choise) - 1035;
+        else
+            axe_type = 0;
         if (mouse_status[1] == 1)
         {
             dig_flag = 0;
@@ -1173,29 +914,20 @@ void render(void)
                         *(chunk + (dig_search_after_chunk_x - player_pre_loadchunk_x) * 1114112 + (dig_search_after_chunk_z - player_pre_loadchunk_z) * 65536 + (dig_search_after_local_x)*4096 + (int)(dig_search_after_y)*16 + dig_search_after_local_z) = 0;
                         hungry += 0.025;
                         if ((block_breaker[tmp] == 1 && canget[tmp] <= pickle_type && pickle_type != 4) || (block_breaker[tmp] == 1 && canget[tmp] <= 1 && pickle_type == 4) || (block_breaker[tmp] == 2 && shovel_type != 0) || (block_breaker[tmp] == 3 && axe_type != 0))
-                            if (*(player_bag + 3 * debugmode + 2) != -1)
+                            if (*(player_bag + 3 * choise + 2) != -1)
                             {
-                                *(player_bag + 3 * debugmode + 2) -= 1;
-                                if (*(player_bag + 3 * debugmode + 2) == 0)
+                                *(player_bag + 3 * choise + 2) -= 1;
+                                if (*(player_bag + 3 * choise + 2) == 0)
                                 {
-                                    *(player_bag + 3 * debugmode) = 0;
-                                    *(player_bag + 3 * debugmode + 1) = 0;
-                                    *(player_bag + 3 * debugmode + 2) = -1;
+                                    *(player_bag + 3 * choise) = 0;
+                                    *(player_bag + 3 * choise + 1) = 0;
+                                    *(player_bag + 3 * choise + 2) = -1;
                                 }
                             }
                     }
                     dig_flag = 1;
                     break;
                 }
-                dig_search_before_x = dig_search_after_x;
-                dig_search_before_block_x = (int)dig_search_before_x;
-                dig_search_before_chunk_x = dig_search_before_block_x / 16;
-                dig_search_before_local_x = dig_search_before_block_x % 16;
-                dig_search_before_y = dig_search_after_y;
-                dig_search_before_z = dig_search_after_z;
-                dig_search_before_block_z = (int)dig_search_before_z;
-                dig_search_before_chunk_z = dig_search_before_block_z / 16;
-                dig_search_before_local_z = dig_search_before_block_z % 16;
             }
         }
         else
@@ -1234,10 +966,8 @@ void render(void)
             else
                 dig_hardness = block_hardness[tmp][0];
         }
-
-        // furnace tick update
         furnace_ope = 0;
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < furnace_recipe_num; i++)
         {
             if (furnace_recipe[i][0] == material_item[1])
             {
@@ -1278,6 +1008,7 @@ void render(void)
                 }
                 else if (fuel_item[1] > 1024 && (furnace_fueltime_items[fuel_item[1] - 1025] != 0.0))
                 {
+                    furnace_fuelnow = furnace_fueltime_block[fuel_item[1]-1025];
                     furnace_fueltime += furnace_fueltime_items[fuel_item[1] - 1025];
                     fuel_item[2]--;
                     if (fuel_item[2] == 0)
@@ -1299,9 +1030,7 @@ void render(void)
                     material_item[3] = -1;
                 }
                 if (product_item[0] != 0)
-                {
                     product_item[1]++;
-                }
                 else
                 {
                     product_item[0] = furnace_creating;
@@ -1313,12 +1042,33 @@ void render(void)
         }
         else
             furnace_opetime = 0.0;
+        if (pause == 0)
+        {
+            mouse_x = w / 2;
+            mouse_y = h / 2;
+        }
+        if (fps_count % 100 == 0)
+            gettimeofday(&start, NULL);
 
-        // Clear
+        if (fps_count % 100 == 99)
+        {
+            gettimeofday(&end, NULL);
+            fps[(fps_count / 100) % 10] = 100.0 / ((end.tv_sec + end.tv_sec * 1e-6) - (start.tv_sec + start.tv_sec * 1e-6));
+            avg_fps = 0.0;
+            for (int i = 0; i < 10; i++)
+            {
+                avg_fps += fps[i];
+            }
+            avg_fps /= 10.0;
+            if (fps_count / 1000 > 0)
+                sprintf(debug_str[1], "fps: %.2lf         ", avg_fps);
+            else
+                sprintf(debug_str[1], "fps: calculating...");
+        }
+        fps_count++;
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawBuffer(GL_FRONT);
-
-        // Camera setting
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         if (camera_perspective_mode == 0)
@@ -1327,8 +1077,16 @@ void render(void)
             gluLookAt(player_x + 5.0 * cos(xz_rad) * cos(y_rad), player_y - 5.0 * sin(y_rad), player_z + 5.0 * sin(xz_rad) * cos(y_rad), player_x, player_y, player_z, 0.0, 1.0, 0.0);
         else if (camera_perspective_mode == 2)
             gluLookAt(player_x - 5.0 * cos(xz_rad) * cos(y_rad), player_y - 5.0 * sin(y_rad), player_z - 5.0 * sin(xz_rad) * cos(y_rad), player_x, player_y, player_z, 0.0, 1.0, 0.0);
-
-        // Draw
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBegin(GL_QUADS);
+        DrawPlayer();
+        glEnd();
+        glPushMatrix();
+        glEnable(GL_TEXTURE_2D);
+        glColor4ub(255, 255, 255, 255);
+        glBindTexture(GL_TEXTURE_2D, img);
         int dx, dy, dz;
         int draw_xmin, draw_zmin;
         int draw_xmax, draw_zmax;
@@ -1350,17 +1108,6 @@ void render(void)
             draw_zmax = player_chunk_z - player_pre_loadchunk_z + 3;
         else
             draw_zmax = 17;
-
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBegin(GL_QUADS);
-        DrawPlayer();
-        glEnd();
-        glPushMatrix();
-        glEnable(GL_TEXTURE_2D);
-        glColor4ub(255, 255, 255, 255);
-        glBindTexture(GL_TEXTURE_2D, img);
         glBegin(GL_QUADS);
         for (int i = draw_xmin; i < draw_xmax; i++)
         {
@@ -1380,7 +1127,6 @@ void render(void)
                             if (tmp != 0 && tmp != 11 && tmp != 15)
                             {
                                 dy = y;
-                                // x-Higher
                                 if ((i < draw_xmax - 1 && x == 15 && (*(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 0 || *(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 9 || *(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 11 || *(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 15)) || (x < 15 && (*(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 15)))
                                 {
                                     glTexCoord2f(0.125, tex_pd);
@@ -1392,7 +1138,6 @@ void render(void)
                                     glTexCoord2f(0.125, tex_pu);
                                     glVertex3i(dx + 1, dy + 1, dz);
                                 }
-                                // y-Higher
                                 if (y == 255 || (y < 255 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 15)))
                                 {
                                     glTexCoord2f(0, tex_pd);
@@ -1404,7 +1149,6 @@ void render(void)
                                     glTexCoord2f(0.125, tex_pd);
                                     glVertex3i(dx + 1, dy + 1, dz);
                                 }
-                                // z-Higher
                                 if ((j < draw_zmax - 1 && z == 15 && (*(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 0 || *(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 9 || *(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 11 || *(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 15)) || (z < 15 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 15)))
                                 {
                                     glTexCoord2f(0.125, tex_pd);
@@ -1416,8 +1160,6 @@ void render(void)
                                     glTexCoord2f(0.25, tex_pd);
                                     glVertex3i(dx + 1, dy, dz + 1);
                                 }
-
-                                // x-Lower
                                 if ((i > 0 && x == 0 && (*(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 0 || *(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 9 || *(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 11 || *(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 15)) || (x > 0 && (*(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 15)))
                                 {
                                     glTexCoord2f(0.125, tex_pd);
@@ -1429,8 +1171,6 @@ void render(void)
                                     glTexCoord2f(0.125, tex_pu);
                                     glVertex3i(dx, dy + 1, dz);
                                 }
-
-                                // y-Lower
                                 if (y == 0 || (y > 0 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 15)))
                                 {
                                     glNormal3f(0, -1, 0);
@@ -1443,8 +1183,6 @@ void render(void)
                                     glTexCoord2f(0.375, tex_pd);
                                     glVertex3i(dx + 1, dy, dz);
                                 }
-
-                                // z-Lower
                                 if ((j > 0 && z == 0 && (*(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 0 || *(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 9 || *(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 11 || *(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 15)) || (z > 0 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 15)))
                                 {
                                     glNormal3f(0, 0, -1);
@@ -1481,7 +1219,6 @@ void render(void)
                             if (tmp == 11 || tmp == 15)
                             {
                                 dy = y;
-                                // x-Higher
                                 if ((i < draw_xmax - 1 && x == 15 && (*(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 0 || *(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 9 || *(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 11 || *(chunk + (i + 1) * 1114112 + j * 65536 + y * 16 + z) == 15)) || (x < 15 && (*(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + (x + 1) * 4096 + y * 16 + z) == 15)))
                                 {
                                     glTexCoord2f(0.125, tex_pd);
@@ -1493,7 +1230,6 @@ void render(void)
                                     glTexCoord2f(0.125, tex_pu);
                                     glVertex3i(dx + 1, dy + 1, dz);
                                 }
-                                // y-Higher
                                 if (y == 255 || (y < 255 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y + 1) * 16 + z) == 15)))
                                 {
                                     glTexCoord2f(0, tex_pd);
@@ -1505,7 +1241,6 @@ void render(void)
                                     glTexCoord2f(0.125, tex_pd);
                                     glVertex3i(dx + 1, dy + 1, dz);
                                 }
-                                // z-Higher
                                 if ((j < draw_zmax - 1 && z == 15 && (*(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 0 || *(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 9 || *(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 11 || *(chunk + i * 1114112 + (j + 1) * 65536 + x * 4096 + y * 16) == 15)) || (z < 15 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z + 1) == 15)))
                                 {
                                     glTexCoord2f(0.125, tex_pd);
@@ -1517,8 +1252,6 @@ void render(void)
                                     glTexCoord2f(0.25, tex_pd);
                                     glVertex3i(dx + 1, dy, dz + 1);
                                 }
-
-                                // x-Lower
                                 if ((i > 0 && x == 0 && (*(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 0 || *(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 9 || *(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 11 || *(chunk + (i - 1) * 1114112 + j * 65536 + 15 * 4096 + y * 16 + z) == 15)) || (x > 0 && (*(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + (x - 1) * 4096 + y * 16 + z) == 15)))
                                 {
                                     glTexCoord2f(0.125, tex_pd);
@@ -1530,8 +1263,6 @@ void render(void)
                                     glTexCoord2f(0.125, tex_pu);
                                     glVertex3i(dx, dy + 1, dz);
                                 }
-
-                                // y-Lower
                                 if (y == 0 || (y > 0 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + (y - 1) * 16 + z) == 15)))
                                 {
                                     glNormal3f(0, -1, 0);
@@ -1544,8 +1275,6 @@ void render(void)
                                     glTexCoord2f(0.375, tex_pd);
                                     glVertex3i(dx + 1, dy, dz);
                                 }
-
-                                // z-Lower
                                 if ((j > 0 && z == 0 && (*(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 0 || *(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 9 || *(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 11 || *(chunk + i * 1114112 + (j - 1) * 65536 + x * 4096 + y * 16 + 15) == 15)) || (z > 0 && (*(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 0 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 9 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 11 || *(chunk + i * 1114112 + j * 65536 + x * 4096 + y * 16 + z - 1) == 15)))
                                 {
                                     glNormal3f(0, 0, -1);
@@ -1567,30 +1296,7 @@ void render(void)
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glPopMatrix();
-        if (dig_flag == 1 && pause == 0)
-        {
-            if (block_breaker[tmp] == 1)
-                bar_length = (dig_hardness / block_hardness[tmp][pickle_type]) * 0.8 - 0.4;
-            else
-                bar_length = (dig_hardness / block_hardness[tmp][0]) * 0.8 - 0.4;
-            glColor3f(0.0, 0.0, 1.0);
-            glBegin(GL_QUADS);
-            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad) * 0.4, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 - cos(xz_rad) * 0.4);
-            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad) * bar_length, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 + cos(xz_rad) * bar_length);
-            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad) * bar_length, (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 + cos(xz_rad) * bar_length);
-            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad) * 0.4, (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 - cos(xz_rad) * 0.4);
-            glEnd();
-            glColor3f(0.0, 0.0, 0.0);
-            glBegin(GL_QUADS);
-            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad) * (-bar_length), (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 - cos(xz_rad) * (-bar_length));
-            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad) * 0.4, (double)dig_now_y + 1.55, (double)dig_now_z + 0.5 + cos(xz_rad) * 0.4);
-            glVertex3f((double)dig_now_x + 0.5 - sin(xz_rad) * 0.4, (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 + cos(xz_rad) * 0.4);
-            glVertex3f((double)dig_now_x + 0.5 + sin(xz_rad) * (-bar_length), (double)dig_now_y + 1.45, (double)dig_now_z + 0.5 - cos(xz_rad) * (-bar_length));
-            glEnd();
-        }
-
         double after_x, after_y, after_z;
-        // calc view
         for (double a = 0; a < 5.0; a += 0.05)
         {
             after_x = player_x + a * cos(xz_rad) * cos(y_rad);
@@ -1610,48 +1316,35 @@ void render(void)
             else
                 next_view_block_y = -1;
         }
-
         glLineWidth(3.0);
         glColor3f(1, 1, 1);
         glBegin(GL_LINES);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 0);
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 0);
-
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 0);
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 1);
-
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 1);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 1);
-
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 1);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 0);
-
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 0);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 0);
-
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 1);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 1);
-
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 1);
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 1);
-
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 0);
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 0);
-
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 0);
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 0);
-
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 0);
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 1);
-
-        glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 1);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 1);
-
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 1);
-        glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 0, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 0, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 0);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 1, next_view_block_y + 1, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 1);
+            glVertex3f(next_view_block_x + 0, next_view_block_y + 1, next_view_block_z + 0);
         glEnd();
         glDisable(GL_DEPTH_TEST);
-        // write strings
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -1664,7 +1357,6 @@ void render(void)
         glLineWidth(2.0);
         int itembox_x = w / 2 - 288;
         int itembox_y = h - 128;
-        // enventory
         if (pause == 0)
         {
             glColor3f(0.9, 0.9, 0.9);
@@ -1681,20 +1373,18 @@ void render(void)
                 glVertex2i(itembox_x + 64 * i, itembox_y);
             }
             glEnd();
-
             glLineWidth(5.0);
             glColor3f(1.0, 1.0, 1.0);
             glBegin(GL_LINES);
-            glVertex2i(itembox_x + 64 * debugmode, itembox_y);
-            glVertex2i(itembox_x + 64 * (debugmode + 1), itembox_y);
-            glVertex2i(itembox_x + 64 * (debugmode + 1), itembox_y);
-            glVertex2i(itembox_x + 64 * (debugmode + 1), itembox_y + 64);
-            glVertex2i(itembox_x + 64 * (debugmode + 1), itembox_y + 64);
-            glVertex2i(itembox_x + 64 * debugmode, itembox_y + 64);
-            glVertex2i(itembox_x + 64 * debugmode, itembox_y + 64);
-            glVertex2i(itembox_x + 64 * debugmode, itembox_y);
+                glVertex2i(itembox_x + 64 * choise, itembox_y);
+                glVertex2i(itembox_x + 64 * (choise + 1), itembox_y);
+                glVertex2i(itembox_x + 64 * (choise + 1), itembox_y);
+                glVertex2i(itembox_x + 64 * (choise + 1), itembox_y + 64);
+                glVertex2i(itembox_x + 64 * (choise + 1), itembox_y + 64);
+                glVertex2i(itembox_x + 64 * choise, itembox_y + 64);
+                glVertex2i(itembox_x + 64 * choise, itembox_y + 64);
+                glVertex2i(itembox_x + 64 * choise, itembox_y);
             glEnd();
-
             glPushMatrix();
             glEnable(GL_TEXTURE_2D);
             glColor4ub(255, 255, 255, 255);
@@ -1733,14 +1423,7 @@ void render(void)
                 if (*(player_bag + 3 * i) > 1025 && *(player_bag + 3 * i) < 1041 && *(player_bag + 3 * i + 2) < durability_list[*(player_bag + 3 * i) - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 64 * i + 8, itembox_y + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 64 * i + 56, itembox_y + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 64 * i + 56, itembox_y + 48);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
-
+                    DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 56, itembox_y + 44, itembox_y + 48);
                     if (*(player_bag + 3 * i + 2) >= durability_empty_list[*(player_bag + 3 * i) - 1026])
                     {
                         durability = (double)(*(player_bag + 3 * i + 2) - durability_empty_list[*(player_bag + 3 * i) - 1026]) / (double)(durability_list[*(player_bag + 3 * i) - 1026] - durability_empty_list[*(player_bag + 3 * i) - 1026]);
@@ -1755,18 +1438,11 @@ void render(void)
                             green = durability * 2.0;
                         }
                         glColor3f(red, green, 0.0);
-                        glVertex2f(itembox_x + 64 * i + 8, itembox_y + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 48);
-                        glColor3f(red, green, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
+                        DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 8 + (int)(48.0 * durability), itembox_y + 44, itembox_y + 48);
                     }
                 }
             }
             glEnd();
-
             for (int i = 0; i < 9; i++)
             {
                 glColor3f(1, 1, 1);
@@ -1775,162 +1451,76 @@ void render(void)
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[0]);
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[1]);
             }
-
             for (int i = 0; i < 10; i++)
             {
                 if (2 * i < *(player_status))
-                {
-                    glBegin(GL_QUADS);
                     glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 18);
-                    glEnd();
-                    glBegin(GL_TRIANGLES);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 18);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 6, itembox_y - 5 - 24);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
-                    glEnd();
-                }
                 else
-                {
-                    glBegin(GL_QUADS);
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 18);
-                    glEnd();
-                    glBegin(GL_TRIANGLES);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 18);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 6, itembox_y - 5 - 24);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
-                    glEnd();
-                }
-                if (2 * i + 1 < *(player_status))
-                {
-                    glBegin(GL_QUADS);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 18);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glEnd();
-                    glBegin(GL_TRIANGLES);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 18);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 18, itembox_y - 5 - 24);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 12);
-                    glColor3f(1.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
-                    glEnd();
-                }
-                else
-                {
-                    glBegin(GL_QUADS);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 18);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glEnd();
-                    glBegin(GL_TRIANGLES);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 18);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 18, itembox_y - 5 - 24);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 12);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
-                    glEnd();
-                }
-            }
 
+                glBegin(GL_QUADS);
+                    DrawRect(itembox_x + 25 * i, itembox_x + 25 * i + 12, itembox_y - 23, itembox_y - 17);
+                glEnd();
+                glBegin(GL_TRIANGLES);
+                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
+                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 18);
+                    glVertex2i(itembox_x + 25 * i + 6, itembox_y - 5 - 24);
+                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 12);
+                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
+                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
+                glEnd();
+
+                if (2 * i + 1 < *(player_status))
+                    glColor3f(1.0, 0.0, 0.0);
+                else
+                    glColor3f(0.0, 0.0, 0.0);
+                glBegin(GL_QUADS);
+                    DrawRect(itembox_x + 25 * i + 12, itembox_x + 25 * i + 24, itembox_y - 23, itembox_y - 17);
+                glEnd();
+                glBegin(GL_TRIANGLES);
+                glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 18);
+                glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
+                glVertex2i(itembox_x + 25 * i + 18, itembox_y - 5 - 24);
+                glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
+                glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 12);
+                glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
+                glEnd();
+            }
             for (int i = 0; i < 9; i++)
             {
                 if (2 * i < *(player_status + 1))
                 {
+                    glColor3f(1.0, 1.0, 0.0);
                     glBegin(GL_TRIANGLES);
-                    glColor3f(1.0, 1.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glColor3f(1.0, 1.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glColor3f(1.0, 1.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_y - 5 - 12);
                     glEnd();
                 }
                 else
                 {
+                    glColor3f(0.0, 0.0, 0.0);
                     glBegin(GL_TRIANGLES);
-                    glColor3f(0.0, 0.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glColor3f(0.0, 0.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glColor3f(0.0, 0.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_y - 5 - 12);
                     glEnd();
                 }
                 if (2 * i + 1 < *(player_status + 1))
                 {
+                    glColor3f(1.0, 1.0, 0.0);
                     glBegin(GL_TRIANGLES);
-                    glColor3f(1.0, 1.0, 0.0);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glColor3f(1.0, 1.0, 0.0);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glColor3f(1.0, 1.0, 0.0);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 12);
+                        glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
+                        glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
+                        glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 12);
                     glEnd();
                 }
                 else
                 {
+                    glColor3f(0.0, 0.0, 0.0);
                     glBegin(GL_TRIANGLES);
-                    glColor3f(0.0, 0.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glColor3f(0.0, 0.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glColor3f(0.0, 0.0, 0.0);
                     glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 12);
                     glEnd();
                 }
@@ -1945,51 +1535,29 @@ void render(void)
             glEnd();
             if (debug == 1)
             {
+                sprintf(debug_str[0], "C-Craft pre1 (dev-ver)");
+                sprintf(debug_str[8], "XYZ: %.2lf %.2lf %.2lf", player_x, player_y, player_z);
+                sprintf(debug_str[9], "BLOCK: %d %d %d", player_block_x, player_block_y, player_block_z);
+                sprintf(debug_str[10], "CHUNK: %d %d %d in %d %d %d", player_local_x, player_local_y, player_local_z, player_chunk_x, player_chunk_y, player_chunk_z);
+                sprintf(debug_str[12], "F:%d B:%d L:%d R:%d SLOW:%d FAST:%d JUMP:%d", key_state[0], key_state[1], key_state[2], key_state[3], key_state[4], key_state[5], key_state[6]);
+                sprintf(debug_str[13], "LOAD CHUNK(PLAYER): %d %d", player_pre_chunk_x, player_pre_chunk_z);
+                sprintf(debug_str[14], "LOAD CHUNK(START): %d %d", player_pre_loadchunk_x, player_pre_loadchunk_z);
+                sprintf(debug_str[15], "BLOCK HARD(DIGING): %.2lf", dig_hardness);
+                sprintf(debug_str[17], "HUNGRY POINT: %.2lf", hungry);
+                sprintf(debug_str[18], "HIDE HUNGRY POINT: %.1lf", player_hide_hungry);
+                sprintf(debug_str[19], "  NO EATING TIME: %.2lf", no_eating_time);
+                sprintf(debug_str[20], "FULL EATING TIME: %.2lf", full_eating_time);
                 glColor3f(0, 0, 0);
-                glRasterPos2i(0, 16);
-                for (int j = 0; j < 60; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, infomation[j]);
-                glRasterPos2i(0, 16 * 2);
-                for (int j = 0; j < 20; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, fps_str[j]);
-                glRasterPos2i(0, 16 * 9);
-                for (int j = 0; j < 40; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, pos_str[j]);
-                glRasterPos2i(0, 16 * 10);
-                for (int j = 0; j < 40; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, block_str[j]);
-                glRasterPos2i(0, 16 * 11);
-                for (int j = 0; j < 40; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, chunk_str[j]);
-                glRasterPos2i(0, 16 * 13);
-                for (int j = 0; j < 60; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, keystate_str[j]);
-                glRasterPos2i(0, 16 * 14);
-                for (int j = 0; j < 60; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, loadpos_str[j]);
-                glRasterPos2i(0, 16 * 15);
-                for (int j = 0; j < 60; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, loadposc_str[j]);
-                glRasterPos2i(0, 16 * 16);
-                for (int j = 0; j < 30; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, dig_str[j]);
-                glRasterPos2i(0, 16 * 18);
-                for (int j = 0; j < 30; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ht_str[j]);
-                glRasterPos2i(0, 16 * 19);
-                for (int j = 0; j < 30; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, hht_str[j]);
-                glRasterPos2i(0, 16 * 20);
-                for (int j = 0; j < 30; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, net_str[j]);
-                glRasterPos2i(0, 16 * 21);
-                for (int j = 0; j < 30; j++)
-                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, het_str[j]);
+                for(int i = 0; i <21; i++)
+                {
+                    glRasterPos2i(0, 16*i+16);
+                    for (int j = 0; j < 60; j++)
+                        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, debug_str[i][j]);
+                }
             }
         }
         else if (menu == 1)
         {
-            // window size
             int w = glutGet(GLUT_WINDOW_WIDTH);
             int h = glutGet(GLUT_WINDOW_HEIGHT);
             int i=0, j=0;
@@ -2008,20 +1576,9 @@ void render(void)
             glEnd();
             glColor3f(0.5, 0.5, 0.5);
             glBegin(GL_QUADS);
-                glVertex2i(w/4, h/2+64);
-                glVertex2i(3*w/4, h/2+64);
-                glVertex2i(3*w/4, h/2+128);
-                glVertex2i(w/4, h/2+128);
-
-                glVertex2i(w/4, h/2-32);
-                glVertex2i(3*w/4, h/2-32);
-                glVertex2i(3*w/4, h/2+32);
-                glVertex2i(w/4, h/2+32);
-
-                glVertex2i(w/4, h/2-128);
-                glVertex2i(3*w/4, h/2-128);
-                glVertex2i(3*w/4, h/2-64);
-                glVertex2i(w/4, h/2-64);
+                DrawRect(w/4, 3*w/4, h/2-128, h/2-64);
+                DrawRect(w/4, 3*w/4, h/2-32, h/2+32);
+                DrawRect(w/4, 3*w/4, h/2+64, h/2+128);
             glEnd();
             glColor3f(1, 1, 1);
             glRasterPos2i(w/2-108, h/2-84);
@@ -2036,7 +1593,6 @@ void render(void)
         }
         else
         {
-            // variables
             int enventry_x;
             int enventry_y;
             int craftbox_x;
@@ -2049,42 +1605,23 @@ void render(void)
             int productbox_y;
             int find;
             int find_idx;
-            // enventry pos
             enventry_x = (w - 640) / 2;
             enventry_y = (h - 640) / 2;
-            // item pos
             itembox_x = enventry_x + 32;
             itembox_y = enventry_y + 32 * 17;
-
-            // inventory frame
             glColor3f(0.8, 0.8, 0.8);
             glBegin(GL_QUADS);
-            glVertex2i(enventry_x, enventry_y);
-            glVertex2i(enventry_x + 640, enventry_y);
-            glVertex2i(enventry_x + 640, enventry_y + 640);
-            glVertex2i(enventry_x, enventry_y + 640);
+                DrawRect(enventry_x, enventry_x+640, enventry_y, enventry_y+640);
             glEnd();
-
-            // inventory
             glColor3f(0.5, 0.5, 0.5);
             glBegin(GL_QUADS);
             for (int i = 0; i < 9; i++)
             {
                 for (int j = 0; j < 3; j++)
-                {
-                    glVertex2i(itembox_x + 64 * i + 2, enventry_y + 32 * (10 + 2 * j) + 2);
-                    glVertex2i(itembox_x + 64 * i + 62, enventry_y + 32 * (10 + 2 * j) + 2);
-                    glVertex2i(itembox_x + 64 * i + 62, enventry_y + 32 * (10 + 2 * j) + 62);
-                    glVertex2i(itembox_x + 64 * i + 2, enventry_y + 32 * (10 + 2 * j) + 62);
-                }
-                glVertex2i(itembox_x + 64 * i + 2, itembox_y + 2);
-                glVertex2i(itembox_x + 64 * i + 62, itembox_y + 2);
-                glVertex2i(itembox_x + 64 * i + 62, itembox_y + 62);
-                glVertex2i(itembox_x + 64 * i + 2, itembox_y + 62);
+                    DrawRect(itembox_x + 64 * i + 2, itembox_x + 64 * i + 62, enventry_y + 320 + 64*j + 2, enventry_y + 320 + 64*j + 62);
+                DrawRect(itembox_x + 64 * i + 2, itembox_x + 64 * i + 62, itembox_y + 2, itembox_y + 62);
             }
             glEnd();
-
-            // num of items (inventry)
             for (int i = 0; i < 9; i++)
             {
                 if (*(player_bag + 3 * i + 1) != 0)
@@ -2107,7 +1644,6 @@ void render(void)
                     }
                 }
             }
-            // num of items (dragginh)
             if (dragging_item[1] != 0)
             {
                 glColor3f(0, 0, 0);
@@ -2116,53 +1652,22 @@ void render(void)
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[0]);
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[1]);
             }
-            if (enventory == 1)
+            if (enventry == 1)
             {
-                // craft box pos
                 craftbox_x = itembox_x + 64 * 5;
                 craftbox_y = enventry_y + 64;
                 glColor3f(0.5, 0.5, 0.5);
                 glBegin(GL_QUADS);
-                // armer field
                 for (int j = 0; j < 4; j++)
-                {
-                    glVertex2i(itembox_x + 2, enventry_y + 32 * (1 + 2 * j) + 2);
-                    glVertex2i(itembox_x + 62, enventry_y + 32 * (1 + 2 * j) + 2);
-                    glVertex2i(itembox_x + 62, enventry_y + 32 * (1 + 2 * j) + 62);
-                    glVertex2i(itembox_x + 2, enventry_y + 32 * (1 + 2 * j) + 62);
-                }
+                    DrawRect(itembox_x + 2, itembox_x + 62, enventry_y + 32 + 64*j + 2, enventry_y + 32 + 64*j + 62);
+                DrawRect(itembox_x + 256 + 2, itembox_x + 256 + 62, enventry_y + 224 + 2, enventry_y + 224 + 62);
+                DrawRect(itembox_x + 320 + 2, itembox_x + 320 + 62, enventry_y + 224 + 2, enventry_y + 224 + 62);
 
-                // free hand field
-                glVertex2i(itembox_x + 64 * 4 + 2, enventry_y + 32 * 7 + 2);
-                glVertex2i(itembox_x + 64 * 4 + 62, enventry_y + 32 * 7 + 2);
-                glVertex2i(itembox_x + 64 * 4 + 62, enventry_y + 32 * 7 + 62);
-                glVertex2i(itembox_x + 64 * 4 + 2, enventry_y + 32 * 7 + 62);
-                // pet toy field
-                glVertex2i(itembox_x + 64 * 5 + 2, enventry_y + 32 * 7 + 2);
-                glVertex2i(itembox_x + 64 * 5 + 62, enventry_y + 32 * 7 + 2);
-                glVertex2i(itembox_x + 64 * 5 + 62, enventry_y + 32 * 7 + 62);
-                glVertex2i(itembox_x + 64 * 5 + 2, enventry_y + 32 * 7 + 62);
-
-                // craft field - before
                 for (int i = 5; i < 7; i++)
-                {
                     for (int j = 0; j < 2; j++)
-                    {
-                        glVertex2i(itembox_x + 64 * i + 2, enventry_y + 32 * (2 + 2 * j) + 2);
-                        glVertex2i(itembox_x + 64 * i + 62, enventry_y + 32 * (2 + 2 * j) + 2);
-                        glVertex2i(itembox_x + 64 * i + 62, enventry_y + 32 * (2 + 2 * j) + 62);
-                        glVertex2i(itembox_x + 64 * i + 2, enventry_y + 32 * (2 + 2 * j) + 62);
-                    }
-                }
-
-                // craft field - after
-                glVertex2i(itembox_x + 64 * 8 + 2, enventry_y + 32 * 3 + 2);
-                glVertex2i(itembox_x + 64 * 8 + 62, enventry_y + 32 * 3 + 2);
-                glVertex2i(itembox_x + 64 * 8 + 62, enventry_y + 32 * 3 + 62);
-                glVertex2i(itembox_x + 64 * 8 + 2, enventry_y + 32 * 3 + 62);
+                        DrawRect(itembox_x + 64 * i + 2, itembox_x + 64 * i + 62, enventry_y + 64 + 64*j + 2, enventry_y + 64 + 64*j + 62);
+                DrawRect(itembox_x + 512 + 2, itembox_x + 512 + 62, enventry_y + 96 + 2, enventry_y + 96 + 62);
                 glEnd();
-
-                // num of items (craft field)
                 for (int i = 0; i < 2; i++)
                 {
                     for (int j = 0; j < 2; j++)
@@ -2177,20 +1682,18 @@ void render(void)
                         }
                     }
                 }
-
-                // search item
                 find_idx = -1;
-                for (int i = 0; i < 7; i++)
+                for (int i = 0; i < recipe22_num; i++)
                 {
                     find = 1;
                     for (int j = 0; j < 4; j++)
-                        if (craft_itembox[j][1] != recipe22[i][j])
+                        if (craft_itembox[j][1] != *(recipe22+i*7+j))
                             find = 0;
                     if (find == 1)
                     {
-                        crafted_item[0] = recipe22[i][4];
-                        crafted_item[1] = recipe22[i][5];
-                        crafted_item[2] = recipe22[i][6];
+                        crafted_item[0] = *(recipe22+i*7+4);
+                        crafted_item[1] = *(recipe22+i*7+5);
+                        crafted_item[2] = *(recipe22+i*7+6);
                         find_idx = i;
                         break;
                     }
@@ -2201,8 +1704,6 @@ void render(void)
                     crafted_item[1] = 0;
                     crafted_item[2] = 0;
                 }
-
-                // draw items
                 glPushMatrix();
                 glEnable(GL_TEXTURE_2D);
                 glColor4ub(255, 255, 255, 255);
@@ -2325,14 +1826,7 @@ void render(void)
                     if (*(player_bag + 3 * i) > 1025 && *(player_bag + 3 * i) < 1041 && *(player_bag + 3 * i + 2) < durability_list[*(player_bag + 3 * i) - 1026])
                     {
                         glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 44);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 56, itembox_y + 44);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 56, itembox_y + 48);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
-
+                        DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 56, itembox_y + 44, itembox_y + 48);
                         if (*(player_bag + 3 * i + 2) >= durability_empty_list[*(player_bag + 3 * i) - 1026])
                         {
                             durability = (double)(*(player_bag + 3 * i + 2) - durability_empty_list[*(player_bag + 3 * i) - 1026]) / (double)(durability_list[*(player_bag + 3 * i) - 1026] - durability_empty_list[*(player_bag + 3 * i) - 1026]);
@@ -2347,17 +1841,10 @@ void render(void)
                                 green = durability * 2.0;
                             }
                             glColor3f(red, green, 0.0);
-                            glVertex2f(itembox_x + 64 * i + 8, itembox_y + 44);
-                            glColor3f(red, green, 0.0);
-                            glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 44);
-                            glColor3f(red, green, 0.0);
-                            glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 48);
-                            glColor3f(red, green, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
+                            DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 8 + (int)(48.0 * durability), itembox_y + 44, itembox_y + 48);
                         }
                     }
                 }
-
                 for (int i = 0; i < 9; i++)
                 {
                     for (int j = 0; j < 3; j++)
@@ -2365,14 +1852,7 @@ void render(void)
                         if (*(player_bag + 3 * (9 * j + i + 9)) > 1025 && *(player_bag + 3 * (9 * j + i + 9)) < 1041 && *(player_bag + 3 * (9 * j + i + 9) + 2) < durability_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026])
                         {
                             glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 56, itembox_y - 64 * (3 - j) - 32 + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 56, itembox_y - 64 * (3 - j) - 32 + 48);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 48);
-
+                            DrawRect(itembox_x + 64*i + 8, itembox_x + 64*i + 56, itembox_y - 224 + 64*j + 44, itembox_y - 224 + 64*j + 48);
                             if (*(player_bag + 3 * (9 * j + i + 9) + 2) >= durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026])
                             {
                                 durability = (double)(*(player_bag + 3 * (9 * j + i + 9) + 2) - durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026]) / (double)(durability_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026] - durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026]);
@@ -2387,13 +1867,7 @@ void render(void)
                                     green = durability * 2.0;
                                 }
                                 glColor3f(red, green, 0.0);
-                                glVertex2f(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y - 64 * (3 - j) - 32 + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y - 64 * (3 - j) - 32 + 48);
-                                glColor3f(red, green, 0.0);
-                                glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 48);
+                                DrawRect(itembox_x + 64*i + 8, itembox_x + 64*i + 8 + (int)(48.0 * durability), itembox_y - 224 + 64*j + 44, itembox_y - 224 + 64*j + 48);
                             }
                         }
                     }
@@ -2401,14 +1875,7 @@ void render(void)
                 if (dragging_item[1] > 1025 && dragging_item[1] < 1041 && dragging_item[3] < durability_list[dragging_item[1] - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 56, mouse_y - 32 + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 56, mouse_y - 32 + 48);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 48);
-
+                    DrawRect(mouse_x - 24, mouse_x + 24, mouse_y + 12, mouse_y + 16);
                     if (dragging_item[3] >= durability_empty_list[dragging_item[1] - 1026])
                     {
                         durability = (double)(dragging_item[3] - durability_empty_list[dragging_item[1] - 1026]) / (double)(durability_list[dragging_item[1] - 1026] - durability_empty_list[dragging_item[1] - 1026]);
@@ -2423,13 +1890,7 @@ void render(void)
                             green = durability * 2.0;
                         }
                         glColor3f(red, green, 0.0);
-                        glVertex2f(mouse_x - 32 + 8, mouse_y - 32 + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(mouse_x - 32 + 8) + 48.0 * durability, mouse_y - 32 + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(mouse_x - 32 + 8) + 48.0 * durability, mouse_y - 32 + 48);
-                        glColor3f(red, green, 0.0);
-                        glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 48);
+                        DrawRect(mouse_x - 24, mouse_x - 24 + (int)(48.0 * durability), mouse_y +12, mouse_y + 16);
                     }
                 }
                 for (int i = 0; i < 2; i++)
@@ -2439,13 +1900,7 @@ void render(void)
                         if (craft_itembox[2 * j + i][1] > 1025 && craft_itembox[2 * j + i][1] < 1041 && craft_itembox[2 * j + i][3] < durability_list[craft_itembox[2 * j + i][1] - 1026])
                         {
                             glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 56, craftbox_y + 64 * j + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 56, craftbox_y + 64 * j + 48);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 48);
+                            DrawRect(craftbox_x + 64*i + 8, craftbox_x + 64*i + 56, craftbox_y + 64 * j + 44, craftbox_y + 64*j + 48);
                             if (craft_itembox[2 * j + i][3] >= durability_empty_list[craft_itembox[2 * j + i][1] - 1026])
                             {
                                 durability = (double)(craft_itembox[2 * j + i][3] - durability_empty_list[craft_itembox[2 * j + i][1] - 1026]) / (double)(durability_list[craft_itembox[2 * j + i][1] - 1026] - durability_empty_list[craft_itembox[2 * j + i][1] - 1026]);
@@ -2460,13 +1915,7 @@ void render(void)
                                     green = durability * 2.0;
                                 }
                                 glColor3f(red, green, 0.0);
-                                glVertex2f(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(craftbox_x + 64 * i + 8) + 48.0 * durability, craftbox_y + 64 * j + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(craftbox_x + 64 * i + 8) + 48.0 * durability, craftbox_y + 64 * j + 48);
-                                glColor3f(red, green, 0.0);
-                                glVertex2i(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 48);
+                                DrawRect(craftbox_x + 64*i + 8, craftbox_x + 64*i + 8 + (int)(48.0 * durability), craftbox_y + 64 * j + 44, craftbox_y + 64*j + 48);
                             }
                         }
                     }
@@ -2475,31 +1924,15 @@ void render(void)
             }
             else if (craft == 1)
             {
-                // craft box pos
                 craftbox_x = itembox_x + 64 * 2;
                 craftbox_y = enventry_y + 64;
                 glColor3f(0.5, 0.5, 0.5);
                 glBegin(GL_QUADS);
-                // craft field - before
                 for (int i = 2; i < 5; i++)
-                {
                     for (int j = 0; j < 3; j++)
-                    {
-                        glVertex2i(itembox_x + 64 * i + 2, enventry_y + 32 * (2 + 2 * j) + 2);
-                        glVertex2i(itembox_x + 64 * i + 62, enventry_y + 32 * (2 + 2 * j) + 2);
-                        glVertex2i(itembox_x + 64 * i + 62, enventry_y + 32 * (2 + 2 * j) + 62);
-                        glVertex2i(itembox_x + 64 * i + 2, enventry_y + 32 * (2 + 2 * j) + 62);
-                    }
-                }
-
-                // craft field - after
-                glVertex2i(itembox_x + 64 * 7 + 2, enventry_y + 32 * 4 + 2);
-                glVertex2i(itembox_x + 64 * 7 + 62, enventry_y + 32 * 4 + 2);
-                glVertex2i(itembox_x + 64 * 7 + 62, enventry_y + 32 * 4 + 62);
-                glVertex2i(itembox_x + 64 * 7 + 2, enventry_y + 32 * 4 + 62);
+                        DrawRect(itembox_x + 64 * i + 2, itembox_x + 64 * i + 62, enventry_y + 64 + 64*j + 2, enventry_y + 64 + 64*j + 62);
+                DrawRect(itembox_x + 448 + 2, itembox_x + 448 + 62, enventry_y + 128 + 2, enventry_y + 128 + 62);
                 glEnd();
-
-                // num of items (craft field)
                 for (int i = 0; i < 3; i++)
                 {
                     for (int j = 0; j < 3; j++)
@@ -2514,21 +1947,18 @@ void render(void)
                         }
                     }
                 }
-
-                // search item
                 find_idx = -1;
-                // search item
-                for (int i = 0; i < 60; i++)
+                for (int i = 0; i < recipe33_num; i++)
                 {
                     find = 1;
                     for (int j = 0; j < 9; j++)
-                        if (bigcraft_itembox[j][1] != recipe33[i][j])
+                        if (bigcraft_itembox[j][1] != *(recipe33+12*i+j))
                             find = 0;
                     if (find == 1)
                     {
-                        bigcrafted_item[0] = recipe33[i][9];
-                        bigcrafted_item[1] = recipe33[i][10];
-                        bigcrafted_item[2] = recipe33[i][11];
+                        bigcrafted_item[0] = *(recipe33+12*i+9);
+                        bigcrafted_item[1] = *(recipe33+12*i+10);
+                        bigcrafted_item[2] = *(recipe33+12*i+11);
                         find_idx = i;
                         break;
                     }
@@ -2539,8 +1969,6 @@ void render(void)
                     bigcrafted_item[1] = 0;
                     bigcrafted_item[2] = -1;
                 }
-
-                // draw items
                 glPushMatrix();
                 glEnable(GL_TEXTURE_2D);
                 glColor4ub(255, 255, 255, 255);
@@ -2663,14 +2091,7 @@ void render(void)
                     if (*(player_bag + 3 * i) > 1025 && *(player_bag + 3 * i) < 1041 && *(player_bag + 3 * i + 2) < durability_list[*(player_bag + 3 * i) - 1026])
                     {
                         glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 44);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 56, itembox_y + 44);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 56, itembox_y + 48);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
-
+                        DrawRect(itembox_x + 64*i + 8, itembox_x + 64 * i + 56, itembox_y + 44, itembox_y + 48);
                         if (*(player_bag + 3 * i + 2) >= durability_empty_list[*(player_bag + 3 * i) - 1026])
                         {
                             durability = (double)(*(player_bag + 3 * i + 2) - durability_empty_list[*(player_bag + 3 * i) - 1026]) / (double)(durability_list[*(player_bag + 3 * i) - 1026] - durability_empty_list[*(player_bag + 3 * i) - 1026]);
@@ -2685,13 +2106,7 @@ void render(void)
                                 green = durability * 2.0;
                             }
                             glColor3f(red, green, 0.0);
-                            glVertex2f(itembox_x + 64 * i + 8, itembox_y + 44);
-                            glColor3f(red, green, 0.0);
-                            glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 44);
-                            glColor3f(red, green, 0.0);
-                            glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 48);
-                            glColor3f(red, green, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
+                            DrawRect(itembox_x + 64*i + 8, itembox_x + 64 * i + 8 + (int)(48.0 * durability), itembox_y + 44, itembox_y + 48);
                         }
                     }
                 }
@@ -2702,14 +2117,7 @@ void render(void)
                         if (*(player_bag + 3 * (9 * j + i + 9)) > 1025 && *(player_bag + 3 * (9 * j + i + 9)) < 1041 && *(player_bag + 3 * (9 * j + i + 9) + 2) < durability_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026])
                         {
                             glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 56, itembox_y - 64 * (3 - j) - 32 + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 56, itembox_y - 64 * (3 - j) - 32 + 48);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 48);
-
+                            DrawRect(itembox_x+ 64*i + 8, itembox_x+ 64*i + 56, itembox_y - 224 + 64*j + 44, itembox_y - 224 + 64*j + 48);
                             if (*(player_bag + 3 * (9 * j + i + 9) + 2) >= durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026])
                             {
                                 durability = (double)(*(player_bag + 3 * (9 * j + i + 9) + 2) - durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026]) / (double)(durability_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026] - durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026]);
@@ -2724,13 +2132,7 @@ void render(void)
                                     green = durability * 2.0;
                                 }
                                 glColor3f(red, green, 0.0);
-                                glVertex2f(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y - 64 * (3 - j) - 32 + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y - 64 * (3 - j) - 32 + 48);
-                                glColor3f(red, green, 0.0);
-                                glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 48);
+                            DrawRect(itembox_x+ 64*i + 8, itembox_x+ 64*i + 8 + (int)(48.0 * durability), itembox_y - 224 + 64*j + 44, itembox_y - 224 + 64*j + 48);
                             }
                         }
                     }
@@ -2738,14 +2140,7 @@ void render(void)
                 if (dragging_item[1] > 1025 && dragging_item[1] < 1041 && dragging_item[3] < durability_list[dragging_item[1] - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 56, mouse_y - 32 + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 56, mouse_y - 32 + 48);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 48);
-
+                    DrawRect(mouse_x-24, mouse_x+24, mouse_y+12, mouse_y+16);
                     if (dragging_item[3] >= durability_empty_list[dragging_item[1] - 1026])
                     {
                         durability = (double)(dragging_item[3] - durability_empty_list[dragging_item[1] - 1026]) / (double)(durability_list[dragging_item[1] - 1026] - durability_empty_list[dragging_item[1] - 1026]);
@@ -2760,13 +2155,7 @@ void render(void)
                             green = durability * 2.0;
                         }
                         glColor3f(red, green, 0.0);
-                        glVertex2f(mouse_x - 32 + 8, mouse_y - 32 + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(mouse_x - 32 + 8) + 48.0 * durability, mouse_y - 32 + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(mouse_x - 32 + 8) + 48.0 * durability, mouse_y - 32 + 48);
-                        glColor3f(red, green, 0.0);
-                        glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 48);
+                        DrawRect(mouse_x-24, mouse_x-24+(int)(48.0 * durability), mouse_y+12, mouse_y+16);
                     }
                 }
                 for (int i = 0; i < 3; i++)
@@ -2776,13 +2165,7 @@ void render(void)
                         if (bigcraft_itembox[3 * j + i][1] > 1025 && bigcraft_itembox[3 * j + i][1] < 1041 && bigcraft_itembox[3 * j + i][3] < durability_list[bigcraft_itembox[3 * j + i][1] - 1026])
                         {
                             glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 56, craftbox_y + 64 * j + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 56, craftbox_y + 64 * j + 48);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 48);
+                            DrawRect(craftbox_x + 64*i + 8, craftbox_x + 64*i + 56, craftbox_y + 64*j + 44, craftbox_y+ 64*j + 48);
                             if (bigcraft_itembox[3 * j + i][3] >= durability_empty_list[bigcraft_itembox[3 * j + i][1] - 1026])
                             {
                                 durability = (double)(bigcraft_itembox[3 * j + i][3] - durability_empty_list[bigcraft_itembox[3 * j + i][1] - 1026]) / (double)(durability_list[bigcraft_itembox[3 * j + i][1] - 1026] - durability_empty_list[bigcraft_itembox[3 * j + i][1] - 1026]);
@@ -2797,13 +2180,7 @@ void render(void)
                                     green = durability * 2.0;
                                 }
                                 glColor3f(red, green, 0.0);
-                                glVertex2f(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(craftbox_x + 64 * i + 8) + 48.0 * durability, craftbox_y + 64 * j + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(craftbox_x + 64 * i + 8) + 48.0 * durability, craftbox_y + 64 * j + 48);
-                                glColor3f(red, green, 0.0);
-                                glVertex2i(craftbox_x + 64 * i + 8, craftbox_y + 64 * j + 48);
+                                DrawRect(craftbox_x + 64*i + 8, craftbox_x + 64*i + 8 + (int)(48.0 * durability), craftbox_y + 64*j + 44, craftbox_y+ 64*j + 48);
                             }
                         }
                     }
@@ -2825,39 +2202,15 @@ void render(void)
                 int material_bar = 60 - (int)(material_percentage * 60.0);
                 glColor3f(0.5, 0.5, 0.5);
                 glBegin(GL_QUADS);
-                // material field
-                glVertex2i(materialbox_x + 2, materialbox_y + 2);
-                glVertex2i(materialbox_x + 62, materialbox_y + 2);
-                glVertex2i(materialbox_x + 62, materialbox_y + 62);
-                glVertex2i(materialbox_x + 2, materialbox_y + 62);
-
-                // fuel field
-                glVertex2i(fuelbox_x + 2, fuelbox_y + 2);
-                glVertex2i(fuelbox_x + 62, fuelbox_y + 2);
-                glVertex2i(fuelbox_x + 62, fuelbox_y + 62);
-                glVertex2i(fuelbox_x + 2, fuelbox_y + 62);
-
-                //  product field
-                glVertex2i(productbox_x + 2, productbox_y + 2);
-                glVertex2i(productbox_x + 62, productbox_y + 2);
-                glVertex2i(productbox_x + 62, productbox_y + 62);
-                glVertex2i(productbox_x + 2, productbox_y + 62);
+                    DrawRect(materialbox_x+2, materialbox_x+62, materialbox_y+2, materialbox_y+62);
+                    DrawRect(fuelbox_x+2, fuelbox_x+62, fuelbox_y+2, fuelbox_y+62);
+                    DrawRect(productbox_x+2, productbox_x+62, productbox_y+2, productbox_y+62);
                 glEnd();
                 glColor3f(1, 1, 1);
                 glBegin(GL_QUADS);
-                // material field
-                glVertex2i(materialbox_x + 2, materialbox_y + material_bar);
-                glVertex2i(materialbox_x + 62, materialbox_y + material_bar);
-                glVertex2i(materialbox_x + 62, materialbox_y + 62);
-                glVertex2i(materialbox_x + 2, materialbox_y + 62);
-
-                // fuel field
-                glVertex2i(fuelbox_x + 2, fuelbox_y + fuelbar);
-                glVertex2i(fuelbox_x + 62, fuelbox_y + fuelbar);
-                glVertex2i(fuelbox_x + 62, fuelbox_y + 62);
-                glVertex2i(fuelbox_x + 2, fuelbox_y + 62);
+                    DrawRect(materialbox_x + 2, materialbox_x + 62, materialbox_y + material_bar, materialbox_y + 62);
+                    DrawRect(fuelbox_x + 2, fuelbox_x + 62, fuelbox_y + fuelbar, fuelbox_y + 62);
                 glEnd();
-                // num of items (craft field)
                 if (material_item[2] != 0)
                 {
                     glColor3f(0, 0, 0);
@@ -2866,7 +2219,6 @@ void render(void)
                     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[0]);
                     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[1]);
                 }
-                // num of items (craft field)
                 if (fuel_item[2] != 0)
                 {
                     glColor3f(0, 0, 0);
@@ -2875,7 +2227,6 @@ void render(void)
                     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[0]);
                     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[1]);
                 }
-                // num of items (craft field)
                 if (product_item[1] != 0)
                 {
                     glColor3f(0, 0, 0);
@@ -2884,8 +2235,6 @@ void render(void)
                     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[0]);
                     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[1]);
                 }
-
-                // draw items
                 glPushMatrix();
                 glEnable(GL_TEXTURE_2D);
                 glColor4ub(255, 255, 255, 255);
@@ -2954,7 +2303,6 @@ void render(void)
                     tex_pu = (double)(material_item[1] - 1041) / 16.0;
                     DrawTexItem(materialbox_x, materialbox_y, tex_pu, tex_pd, 0.5, 0.625);
                 }
-
                 if (fuel_item[1] > 0 && fuel_item[1] < 16 && fuel_item[1] != 9)
                 {
                     tex_pd = (double)(fuel_item[1] + 1) / 16.0;
@@ -2973,7 +2321,6 @@ void render(void)
                     tex_pu = (double)(fuel_item[1] - 1041) / 16.0;
                     DrawTexItem(fuelbox_x, fuelbox_y, tex_pu, tex_pd, 0.5, 0.625);
                 }
-
                 if (product_item[0] > 0 && product_item[0] < 16 && product_item[0] != 9)
                 {
                     tex_pd = (double)(product_item[0] + 1) / 16.0;
@@ -2992,7 +2339,6 @@ void render(void)
                     tex_pu = (double)(product_item[0] - 1041) / 16.0;
                     DrawTexItem(productbox_x, productbox_y, tex_pu, tex_pd, 0.5, 0.625);
                 }
-
                 if (dragging_item[1] > 0 && dragging_item[1] < 16 && dragging_item[1] != 9)
                 {
                     tex_pd = (double)(dragging_item[1] + 1) / 16.0;
@@ -3023,14 +2369,7 @@ void render(void)
                     if (*(player_bag + 3 * i) > 1025 && *(player_bag + 3 * i) < 1041 && *(player_bag + 3 * i + 2) < durability_list[*(player_bag + 3 * i) - 1026])
                     {
                         glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 44);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 56, itembox_y + 44);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 56, itembox_y + 48);
-                        glColor3f(0.0, 0.0, 0.0);
-                        glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
-
+                        DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i +56, itembox_y + 44, itembox_y + 48);
                         if (*(player_bag + 3 * i + 2) >= durability_empty_list[*(player_bag + 3 * i) - 1026])
                         {
                             durability = (double)(*(player_bag + 3 * i + 2) - durability_empty_list[*(player_bag + 3 * i) - 1026]) / (double)(durability_list[*(player_bag + 3 * i) - 1026] - durability_empty_list[*(player_bag + 3 * i) - 1026]);
@@ -3045,13 +2384,7 @@ void render(void)
                                 green = durability * 2.0;
                             }
                             glColor3f(red, green, 0.0);
-                            glVertex2f(itembox_x + 64 * i + 8, itembox_y + 44);
-                            glColor3f(red, green, 0.0);
-                            glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 44);
-                            glColor3f(red, green, 0.0);
-                            glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y + 48);
-                            glColor3f(red, green, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y + 48);
+                            DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 8 + (int)(48.0 * durability), itembox_y + 44, itembox_y + 48);
                         }
                     }
                 }
@@ -3062,14 +2395,7 @@ void render(void)
                         if (*(player_bag + 3 * (9 * j + i + 9)) > 1025 && *(player_bag + 3 * (9 * j + i + 9)) < 1041 && *(player_bag + 3 * (9 * j + i + 9) + 2) < durability_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026])
                         {
                             glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 56, itembox_y - 64 * (3 - j) - 32 + 44);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 56, itembox_y - 64 * (3 - j) - 32 + 48);
-                            glColor3f(0.0, 0.0, 0.0);
-                            glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 48);
-
+                            DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 56, itembox_y - 224 + 64*j + 44, itembox_y - 224 + 64*j + 48);
                             if (*(player_bag + 3 * (9 * j + i + 9) + 2) >= durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026])
                             {
                                 durability = (double)(*(player_bag + 3 * (9 * j + i + 9) + 2) - durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026]) / (double)(durability_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026] - durability_empty_list[*(player_bag + 3 * (9 * j + i + 9)) - 1026]);
@@ -3084,13 +2410,7 @@ void render(void)
                                     green = durability * 2.0;
                                 }
                                 glColor3f(red, green, 0.0);
-                                glVertex2f(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y - 64 * (3 - j) - 32 + 44);
-                                glColor3f(red, green, 0.0);
-                                glVertex2f((double)(itembox_x + 64 * i + 8) + 48.0 * durability, itembox_y - 64 * (3 - j) - 32 + 48);
-                                glColor3f(red, green, 0.0);
-                                glVertex2i(itembox_x + 64 * i + 8, itembox_y - 64 * (3 - j) - 32 + 48);
+                                DrawRect(itembox_x + 64 * i + 8, itembox_x + 64 * i + 8 + (int)(48.0*durability), itembox_y - 224 + 64*j + 44, itembox_y - 224 + 64*j + 48);
                             }
                         }
                     }
@@ -3098,14 +2418,7 @@ void render(void)
                 if (dragging_item[1] > 1025 && dragging_item[1] < 1041 && dragging_item[3] < durability_list[dragging_item[1] - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 56, mouse_y - 32 + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 56, mouse_y - 32 + 48);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 48);
-
+                    DrawRect(mouse_x - 24, mouse_x+24, mouse_y - 12, mouse_y+16);
                     if (dragging_item[3] >= durability_empty_list[dragging_item[1] - 1026])
                     {
                         durability = (double)(dragging_item[3] - durability_empty_list[dragging_item[1] - 1026]) / (double)(durability_list[dragging_item[1] - 1026] - durability_empty_list[dragging_item[1] - 1026]);
@@ -3120,26 +2433,13 @@ void render(void)
                             green = durability * 2.0;
                         }
                         glColor3f(red, green, 0.0);
-                        glVertex2f(mouse_x - 32 + 8, mouse_y - 32 + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(mouse_x - 32 + 8) + 48.0 * durability, mouse_y - 32 + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(mouse_x - 32 + 8) + 48.0 * durability, mouse_y - 32 + 48);
-                        glColor3f(red, green, 0.0);
-                        glVertex2i(mouse_x - 32 + 8, mouse_y - 32 + 48);
+                        DrawRect(mouse_x - 24, mouse_x-24+(int)(48.0 * durability), mouse_y - 12, mouse_y+16);
                     }
                 }
                 if (material_item[1] > 1025 && material_item[1] < 1041 && material_item[3] < durability_list[material_item[1] - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(materialbox_x + 8, materialbox_y + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(materialbox_x + 56, materialbox_y + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(materialbox_x + 56, materialbox_y + 48);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(materialbox_x + 8, materialbox_y + 48);
-
+                    DrawRect(materialbox_x+8, materialbox_x + 56, materialbox_y+44, materialbox_y+48);
                     if (material_item[3] >= durability_empty_list[material_item[1] - 1026])
                     {
                         durability = (double)(material_item[3] - durability_empty_list[material_item[1] - 1026]) / (double)(durability_list[material_item[1] - 1026] - durability_empty_list[material_item[1] - 1026]);
@@ -3153,27 +2453,13 @@ void render(void)
                             red = 1.0;
                             green = durability * 2.0;
                         }
-                        glColor3f(red, green, 0.0);
-                        glVertex2f(materialbox_x + 8, materialbox_y + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(materialbox_x + 8) + 48.0 * durability, materialbox_y + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(materialbox_x + 8) + 48.0 * durability, materialbox_y + 48);
-                        glColor3f(red, green, 0.0);
-                        glVertex2i(materialbox_x + 8, materialbox_y + 48);
+                        DrawRect(materialbox_x+8, materialbox_x + 8 + (int)(48.0 * durability), materialbox_y+44, materialbox_y+48);
                     }
                 }
                 if (fuel_item[1] > 1025 && fuel_item[1] < 1041 && fuel_item[3] < durability_list[fuel_item[1] - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(fuelbox_x + 8, fuelbox_y + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(fuelbox_x + 56, fuelbox_y + 44);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(fuelbox_x + 56, fuelbox_y + 48);
-                    glColor3f(0.0, 0.0, 0.0);
-                    glVertex2i(fuelbox_x + 8, fuelbox_y + 48);
-
+                    DrawRect(fuelbox_x+8, fuelbox_x + 56, fuelbox_y+44, fuelbox_y+48);
                     if (fuel_item[3] >= durability_empty_list[fuel_item[1] - 1026])
                     {
                         durability = (double)(fuel_item[3] - durability_empty_list[fuel_item[1] - 1026]) / (double)(durability_list[fuel_item[1] - 1026] - durability_empty_list[fuel_item[1] - 1026]);
@@ -3188,13 +2474,7 @@ void render(void)
                             green = durability * 2.0;
                         }
                         glColor3f(red, green, 0.0);
-                        glVertex2f(fuelbox_x + 8, fuelbox_y + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(fuelbox_x + 8) + 48.0 * durability, fuelbox_y + 44);
-                        glColor3f(red, green, 0.0);
-                        glVertex2f((double)(fuelbox_x + 8) + 48.0 * durability, fuelbox_y + 48);
-                        glColor3f(red, green, 0.0);
-                        glVertex2i(fuelbox_x + 8, fuelbox_y + 48);
+                        DrawRect(fuelbox_x+8, fuelbox_x + 8 + (int)(48.0 * durability), fuelbox_y+44, fuelbox_y+48);
                     }
                 }
                 glEnd();
@@ -3206,44 +2486,13 @@ void render(void)
         glPopMatrix();
         glPopMatrix();
         glFlush();
-
-        // Update
         glutSwapBuffers();
-        if (fps_count % 100 == 99)
-        {
-            gettimeofday(&end, NULL);
-            fps[(fps_count / 100) % 10] = 100.0 / ((end.tv_sec + end.tv_sec * 1e-6) - (start.tv_sec + start.tv_sec * 1e-6));
-            avg_fps = 0.0;
-            for (int i = 0; i < 10; i++)
-            {
-                avg_fps += fps[i];
-            }
-            avg_fps /= 10.0;
-            if (fps_count / 1000 > 0)
-                sprintf(fps_str, "fps: %.2lf         ", avg_fps);
-        }
-        fps_count++;
-        sprintf(infomation, "C-Craft pre1 (dev-ver)");
-        sprintf(pos_str, "XYZ: %.2lf %.2lf %.2lf", player_x, player_y, player_z);
-        sprintf(block_str, "BLOCK: %d %d %d", player_block_x, player_block_y, player_block_z);
-        sprintf(chunk_str, "CHUNK: %d %d %d in %d %d %d", player_local_x, player_local_y, player_local_z, player_chunk_x, player_chunk_y, player_chunk_z);
-        sprintf(keystate_str, "F:%d B:%d L:%d R:%d SLOW:%d FAST:%d JUMP:%d", key_state[0], key_state[1], key_state[2], key_state[3], key_state[4], key_state[5], key_state[6]);
-        sprintf(loadposc_str, "LOAD CHUNK(PLAYER): %d %d", player_pre_chunk_x, player_pre_chunk_z);
-        sprintf(loadpos_str, "LOAD CHUNK(START): %d %d", player_pre_loadchunk_x, player_pre_loadchunk_z);
-        sprintf(dig_str, "BLOCK HARD(DIGING): %.2lf", dig_hardness);
-        sprintf(ht_str, "HUNGRY POINT: %.2lf", hungry);
-        sprintf(hht_str, "HIDE HUNGRY POINT: %.1lf", player_hide_hungry);
-        sprintf(net_str, "  NO EATING TIME: %.2lf", no_eating_time);
-        sprintf(het_str, "FULL EATING TIME: %.2lf", full_eating_time);
     }
 }
 
 void reshape(int width, int height)
 {
-    // View port
     glViewport(0, 0, width, height);
-
-    // Set field of view
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(60.0, (double)width / (double)height, 0.01, 100000.0);
@@ -3251,14 +2500,7 @@ void reshape(int width, int height)
 
 void keyboard(unsigned char c, int x, int y)
 {
-    if (scene == 0)
-    {
-
-    }
-    else if (scene == 2)
-    {
-    }
-    else if (scene == 3)
+    if (scene == 3)
     {
         int a = glutGetModifiers();
         if ((a & GLUT_ACTIVE_SHIFT) != 0)
@@ -3271,9 +2513,9 @@ void keyboard(unsigned char c, int x, int y)
             key_state[5] = 0;
         if (c == 'w' || c == 'W' || c == 23)
             key_state[0] = 1;
-        else if (c == 's' || c == 'S' || c == 1)
+        else if (c == 's' || c == 'S' || c == 19)
             key_state[1] = 1;
-        else if (c == 'a' || c == 'A' || c == 19)
+        else if (c == 'a' || c == 'A' || c == 1)
             key_state[2] = 1;
         else if (c == 'd' || c == 'D' || c == 4)
             key_state[3] = 1;
@@ -3284,11 +2526,7 @@ void keyboard(unsigned char c, int x, int y)
 
 void keyboardup(unsigned char c, int x, int y)
 {
-    if (scene == 0)
-    {
-
-    }
-    else if (scene == 1)
+    if (scene == 1)
     {
         if (c >= 32 && c < 127)
         {
@@ -3299,16 +2537,8 @@ void keyboardup(unsigned char c, int x, int y)
             }
         }
         else if (c == 8 || c == 127)
-        {
             if (seed_length > 0)
-            {
                 seed_length --;
-            }
-        }
-    }
-    else if (scene == 2)
-    {
-
     }
     else if (scene == 3)
     {
@@ -3327,7 +2557,22 @@ void keyboardup(unsigned char c, int x, int y)
             menu = 1;
             craft = 0;
             fire = 0;
-            enventory = 0;
+            enventry = 0;
+            dragging_item[0] = -1;
+            dragging_item[1] = 0;
+            dragging_item[2] = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                craft_itembox[i][0] = -1;
+                craft_itembox[i][1] = 0;
+                craft_itembox[i][2] = 0;
+            }
+            for (int i = 0; i < 9; i++)
+            {
+                bigcraft_itembox[i][0] = -1;
+                bigcraft_itembox[i][1] = 0;
+                bigcraft_itembox[i][2] = 0;
+            }
         }
         else if (c == 'w' || c == 'W' || c == 23)
             key_state[0] = 0;
@@ -3340,7 +2585,7 @@ void keyboardup(unsigned char c, int x, int y)
         else if (c == ' ')
             key_state[6] = 0;
         else if (c >= '1' && c <= '9')
-            debugmode = c - '1';
+            choise = c - '1';
         else if (c == 'e' && menu != 1)
         {
             if (craft == 1)
@@ -3348,45 +2593,30 @@ void keyboardup(unsigned char c, int x, int y)
             else if (fire == 1)
                 fire = 1 - fire;
             else
-                enventory = 1 - enventory;
+                enventry = 1 - enventry;
             pause = 1 - pause;
-            if (enventory == 0 && dragging_item[0] != -1)
-            {
-                *(player_bag + 3 * dragging_item[0] + 0) = dragging_item[1];
-                *(player_bag + 3 * dragging_item[0] + 1) = dragging_item[2];
-                dragging_item[0] = -1;
-                dragging_item[1] = 0;
-                dragging_item[2] = 0;
-            }
+            dragging_item[0] = -1;
+            dragging_item[1] = 0;
+            dragging_item[2] = 0;
             for (int i = 0; i < 4; i++)
             {
-                if (enventory == 0 && craft_itembox[i][0] != -1)
-                {
-                    *(player_bag + 3 * dragging_item[0] + 0) = craft_itembox[i][1];
-                    *(player_bag + 3 * dragging_item[0] + 1) = craft_itembox[i][2];
-                    craft_itembox[i][0] = -1;
-                    craft_itembox[i][1] = 0;
-                    craft_itembox[i][2] = 0;
-                }
+                craft_itembox[i][0] = -1;
+                craft_itembox[i][1] = 0;
+                craft_itembox[i][2] = 0;
+            }
+            for (int i = 0; i < 9; i++)
+            {
+                bigcraft_itembox[i][0] = -1;
+                bigcraft_itembox[i][1] = 0;
+                bigcraft_itembox[i][2] = 0;
             }
         }
     }
 }
 
-void special(int c, int x, int y)
-{
-}
 void specialup(int c, int x, int y)
 {
-    if (scene == 0)
-    {
-
-    }
-    else if (scene == 2)
-    {
-
-    }
-    else if (scene == 3)
+    if (scene == 3)
     {
         switch (c)
         {
@@ -3436,11 +2666,8 @@ void mouse(int button, int state, int x, int y)
     {
         int w = glutGet(GLUT_WINDOW_WIDTH);
         int h = glutGet(GLUT_WINDOW_HEIGHT);
-
         if (w/2-128 <= x && x < w/2+128 * 9 && h/2+64 <= y && y < h/2+128)
-        {
             scene = 0;
-        }
         if (w/2-128 <= x && x < w/2+128 * 9 && h/2+160 <= y && y < h/2+224 && seed_length > 0)
         {
             SEED_NUM = 0;
@@ -3457,7 +2684,6 @@ void mouse(int button, int state, int x, int y)
             coal_rate = (double *)malloc(sizeof(double) * WORLD_CHUNK * WORLD_CHUNK * 4 * 128 * 4);
             wood_rate = (double *)malloc(sizeof(double) * WORLD_CHUNK * WORLD_CHUNK * 16 * 16);
             wood_put = (char *)malloc(sizeof(char) * WORLD_CHUNK * WORLD_CHUNK * 16 * 16);
-
             srand(SEED_NUM);
             for (int i = 0; i < WORLD_CHUNK / 4; i++)
                 for (int j = 0; j < WORLD_CHUNK / 4; j++)
@@ -3488,22 +2714,11 @@ void mouse(int button, int state, int x, int y)
 
             for (int i = 0; i < 16; i++)
                 PerlinNoize1d(onechunk1d_y + i * 16, i, 1, 1, SEED_NUM);
-            
             load_counter = 0;
         }
     }
     else if (scene == 3)
     {
-        double before_x, after_x, before_y, after_y, before_z, after_z;
-        before_x = player_x;
-        view_block_x = (int)before_x;
-        view_chunk_x = view_block_x / 16;
-        view_local_x = view_block_x % 16;
-        before_y = player_y;
-        before_z = player_z;
-        view_block_z = (int)before_z;
-        view_chunk_z = view_block_z / 16;
-        view_local_z = view_block_z % 16;
         if (button == GLUT_RIGHT_BUTTON)
         {
             if (state == GLUT_UP)
@@ -3512,6 +2727,16 @@ void mouse(int button, int state, int x, int y)
                 mouse_status[0] = 1;
             if (mouse_status[0] == 1 && pause == 0)
             {
+                double before_x, after_x, before_y, after_y, before_z, after_z;
+                before_x = player_x;
+                view_block_x = (int)before_x;
+                view_chunk_x = view_block_x / 16;
+                view_local_x = view_block_x % 16;
+                before_y = player_y;
+                before_z = player_z;
+                view_block_z = (int)before_z;
+                view_chunk_z = view_block_z / 16;
+                view_local_z = view_block_z % 16;
                 for (double a = 0; a < 5.0; a += 0.05)
                 {
                     after_x = player_x + a * cos(xz_rad) * cos(y_rad);
@@ -3538,29 +2763,29 @@ void mouse(int button, int state, int x, int y)
                         fire = 1;
                         break;
                     }
-                    else if (*(chunk + (next_view_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_view_chunk_z - player_pre_loadchunk_z) * 65536 + (next_view_local_x)*4096 + (int)(after_y)*16 + next_view_local_z) != 0 && *(player_bag + 3 * debugmode + 1) != 0 && *(player_bag + 3 * debugmode) <= 1024)
+                    else if (*(chunk + (next_view_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_view_chunk_z - player_pre_loadchunk_z) * 65536 + (next_view_local_x)*4096 + (int)(after_y)*16 + next_view_local_z) != 0 && *(player_bag + 3 * choise + 1) != 0 && *(player_bag + 3 * choise) <= 1024)
                     {
 
                         if ((int)after_x != (int)before_x && ((int)before_x != (int)player_x || ((int)after_y != (int)(player_y - 1.5) && (int)after_y != (int)(player_y - 0.5)) || (int)after_z != (int)player_z))
                         {
-                            *(chunk + (view_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_view_chunk_z - player_pre_loadchunk_z) * 65536 + (view_local_x)*4096 + (int)(after_y)*16 + next_view_local_z) = *(player_bag + 3 * debugmode);
-                            *(player_bag + 3 * debugmode + 1) -= 1;
-                            if (*(player_bag + 3 * debugmode + 1) == 0)
-                                *(player_bag + 3 * debugmode) = 0;
+                            *(chunk + (view_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_view_chunk_z - player_pre_loadchunk_z) * 65536 + (view_local_x)*4096 + (int)(after_y)*16 + next_view_local_z) = *(player_bag + 3 * choise);
+                            *(player_bag + 3 * choise + 1) -= 1;
+                            if (*(player_bag + 3 * choise + 1) == 0)
+                                *(player_bag + 3 * choise) = 0;
                         }
                         else if ((int)after_y != (int)before_y && ((int)after_x != (int)player_x || ((int)before_y != (int)(player_y - 1.5) && (int)before_y != (int)(player_y - 0.5)) || (int)after_z != (int)player_z))
                         {
-                            *(chunk + (next_view_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_view_chunk_z - player_pre_loadchunk_z) * 65536 + (next_view_local_x)*4096 + (int)(before_y)*16 + next_view_local_z) = *(player_bag + 3 * debugmode);
-                            *(player_bag + 3 * debugmode + 1) -= 1;
-                            if (*(player_bag + 3 * debugmode + 1) == 0)
-                                *(player_bag + 3 * debugmode) = 0;
+                            *(chunk + (next_view_chunk_x - player_pre_loadchunk_x) * 1114112 + (next_view_chunk_z - player_pre_loadchunk_z) * 65536 + (next_view_local_x)*4096 + (int)(before_y)*16 + next_view_local_z) = *(player_bag + 3 * choise);
+                            *(player_bag + 3 * choise + 1) -= 1;
+                            if (*(player_bag + 3 * choise + 1) == 0)
+                                *(player_bag + 3 * choise) = 0;
                         }
                         else if ((int)after_z != (int)before_z && ((int)after_x != (int)player_x || ((int)after_y != (int)(player_y - 1.5) && (int)after_y != (int)(player_y - 0.5)) || (int)before_z != (int)player_z))
                         {
-                            *(chunk + (next_view_chunk_x - player_pre_loadchunk_x) * 1114112 + (view_chunk_z - player_pre_loadchunk_z) * 65536 + (next_view_local_x)*4096 + (int)(after_y)*16 + view_local_z) = *(player_bag + 3 * debugmode);
-                            *(player_bag + 3 * debugmode + 1) -= 1;
-                            if (*(player_bag + 3 * debugmode + 1) == 0)
-                                *(player_bag + 3 * debugmode) = 0;
+                            *(chunk + (next_view_chunk_x - player_pre_loadchunk_x) * 1114112 + (view_chunk_z - player_pre_loadchunk_z) * 65536 + (next_view_local_x)*4096 + (int)(after_y)*16 + view_local_z) = *(player_bag + 3 * choise);
+                            *(player_bag + 3 * choise + 1) -= 1;
+                            if (*(player_bag + 3 * choise + 1) == 0)
+                                *(player_bag + 3 * choise) = 0;
                         }
                         break;
                     }
@@ -3578,8 +2803,7 @@ void mouse(int button, int state, int x, int y)
                     view_local_z = view_block_z % 16;
                 }
             }
-
-            if (state == GLUT_UP && enventory == 1)
+            if (state == GLUT_UP && enventry == 1)
             {
                 int w = glutGet(GLUT_WINDOW_WIDTH);
                 int h = glutGet(GLUT_WINDOW_HEIGHT);
@@ -3592,14 +2816,13 @@ void mouse(int button, int state, int x, int y)
                 int craftedbox_x = itembox_x + 64 * 8;
                 int craftedbox_y = enventry_y + 96;
                 int tmp1, tmp2, tmp3, tmp4;
-
                 if (craftedbox_x <= x && x < craftedbox_x + 64 && craftedbox_y <= y && y < craftedbox_y + 64)
                 {
                     if (dragging_item[0] == -1 || crafted_item[0] == dragging_item[1])
                     {
                         if (crafted_item[0] != 0)
                         {
-                            if (crafted_item[0] > 1025 && crafted_item[0] < 1041)
+                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 if (dragging_item[2] == 0)
                                 {
@@ -3655,17 +2878,14 @@ void mouse(int button, int state, int x, int y)
                             if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = craft_itembox[click_state][0];
                                 dragging_item[1] = craft_itembox[click_state][1];
                                 dragging_item[2] = craft_itembox[click_state][2];
                                 dragging_item[3] = craft_itembox[click_state][3];
-
                                 craft_itembox[click_state][0] = tmp1;
                                 craft_itembox[click_state][1] = tmp2;
                                 craft_itembox[click_state][2] = tmp3;
@@ -3705,17 +2925,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = craft_itembox[click_state][0];
                                 dragging_item[1] = craft_itembox[click_state][1];
                                 dragging_item[2] = craft_itembox[click_state][2];
                                 dragging_item[3] = craft_itembox[click_state][3];
-
                                 craft_itembox[click_state][0] = tmp1;
                                 craft_itembox[click_state][1] = tmp2;
                                 craft_itembox[click_state][2] = tmp3;
@@ -3744,165 +2961,13 @@ void mouse(int button, int state, int x, int y)
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64 * 3)
                 {
                     int click_state = ((x - itembox_x) / 64) + 9 * ((y - itembox_y) / 64) + 9;
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) = dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) = dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) = dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
                 itembox_y = enventry_y + 32 * 17;
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64)
                 {
                     int click_state = ((x - itembox_x) / 64);
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) += dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) += dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
             }
             else if (state == GLUT_UP && craft == 1)
@@ -3918,7 +2983,6 @@ void mouse(int button, int state, int x, int y)
                 int craftedbox_x = itembox_x + 64 * 7;
                 int craftedbox_y = enventry_y + 128;
                 int tmp1, tmp2, tmp3, tmp4;
-
                 if (craftedbox_x <= x && x < craftedbox_x + 64 && craftedbox_y <= y && y < craftedbox_y + 64)
                 {
                     if (dragging_item[0] == -1 || bigcrafted_item[0] == dragging_item[1])
@@ -3978,8 +3042,7 @@ void mouse(int button, int state, int x, int y)
                     {
                         if (bigcraft_itembox[click_state][1] == dragging_item[1])
                         {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                                ;
+                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041);
                             else
                             {
                                 if (bigcraft_itembox[click_state][2] < 64)
@@ -3997,11 +3060,12 @@ void mouse(int button, int state, int x, int y)
                         }
                         else
                         {
-                            if (bigcraft_itembox[click_state][1] == 0)
+                            if (craft_itembox[click_state][1] == 0)
                             {
                                 bigcraft_itembox[click_state][0] = dragging_item[0];
                                 bigcraft_itembox[click_state][1] = dragging_item[1];
                                 bigcraft_itembox[click_state][2] += 1;
+                                bigcraft_itembox[click_state][3] = dragging_item[3];
                                 if (dragging_item[2] == 1)
                                 {
                                     dragging_item[0] = -1;
@@ -4013,17 +3077,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = bigcraft_itembox[click_state][0];
                                 dragging_item[1] = bigcraft_itembox[click_state][1];
                                 dragging_item[2] = bigcraft_itembox[click_state][2];
                                 dragging_item[3] = bigcraft_itembox[click_state][3];
-
                                 bigcraft_itembox[click_state][0] = tmp1;
                                 bigcraft_itembox[click_state][1] = tmp2;
                                 bigcraft_itembox[click_state][2] = tmp3;
@@ -4052,165 +3113,13 @@ void mouse(int button, int state, int x, int y)
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64 * 3)
                 {
                     int click_state = ((x - itembox_x) / 64) + 9 * ((y - itembox_y) / 64) + 9;
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) = dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) = dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) = dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
                 itembox_y = enventry_y + 32 * 17;
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64)
                 {
                     int click_state = ((x - itembox_x) / 64);
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) += dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) += dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
             }
             else if (state == GLUT_UP && fire == 1)
@@ -4270,17 +3179,14 @@ void mouse(int button, int state, int x, int y)
                             if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = material_item[0];
                                 dragging_item[1] = material_item[1];
                                 dragging_item[2] = material_item[2];
                                 dragging_item[3] = material_item[3];
-
                                 material_item[0] = tmp1;
                                 material_item[1] = tmp2;
                                 material_item[2] = tmp3;
@@ -4308,7 +3214,7 @@ void mouse(int button, int state, int x, int y)
                                 material_item[0] = dragging_item[0];
                                 material_item[1] = dragging_item[1];
                                 material_item[2] += 1;
-                                material_item[3] += dragging_item[3];
+                                material_item[3] = dragging_item[3];
                                 if (dragging_item[2] == 1)
                                 {
                                     dragging_item[0] = -1;
@@ -4320,17 +3226,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = material_item[0];
                                 dragging_item[1] = material_item[1];
                                 dragging_item[2] = material_item[2];
                                 dragging_item[3] = material_item[3];
-
                                 material_item[0] = tmp1;
                                 material_item[1] = tmp2;
                                 material_item[2] = tmp3;
@@ -4365,17 +3268,14 @@ void mouse(int button, int state, int x, int y)
                             if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = fuel_item[0];
                                 dragging_item[1] = fuel_item[1];
                                 dragging_item[2] = fuel_item[2];
                                 dragging_item[3] = fuel_item[3];
-
                                 fuel_item[0] = tmp1;
                                 fuel_item[1] = tmp2;
                                 fuel_item[2] = tmp3;
@@ -4403,6 +3303,7 @@ void mouse(int button, int state, int x, int y)
                                 fuel_item[0] = dragging_item[0];
                                 fuel_item[1] = dragging_item[1];
                                 fuel_item[2] += 1;
+                                fuel_item[3] = dragging_item[3];
                                 if (dragging_item[2] == 1)
                                 {
                                     dragging_item[0] = -1;
@@ -4414,17 +3315,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = fuel_item[0];
                                 dragging_item[1] = fuel_item[1];
                                 dragging_item[2] = fuel_item[2];
                                 dragging_item[3] = fuel_item[3];
-
                                 fuel_item[0] = tmp1;
                                 fuel_item[1] = tmp2;
                                 fuel_item[2] = tmp3;
@@ -4453,165 +3351,12 @@ void mouse(int button, int state, int x, int y)
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64 * 3)
                 {
                     int click_state = ((x - itembox_x) / 64) + 9 * ((y - itembox_y) / 64) + 9;
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) = dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) = dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) = dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
-                }
+                    ClickItemBag(click_state);                }
                 itembox_y = enventry_y + 32 * 17;
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64)
                 {
                     int click_state = ((x - itembox_x) / 64);
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) += dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) += dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
             }
         }
@@ -4637,7 +3382,6 @@ void mouse(int button, int state, int x, int y)
                             SaveChunk(chunk+i*1114112+j*65536, i+player_pre_loadchunk_x, j+player_pre_loadchunk_z);
                     SaveItem(player_bag);
                     SaveStatus(player_status);
-
                     pause = 1 - pause;
                     menu = 1 - menu;
                 }
@@ -4655,8 +3399,6 @@ void mouse(int button, int state, int x, int y)
                     player_pre_loadchunk_z = 0;
                     player_pre_chunk_x = 8;
                     player_pre_chunk_z = 8;
-                    player_pre_block_y;
-
                     player_chunk_x = 8;
                     player_chunk_y = 5;
                     player_chunk_z = 8;
@@ -4666,7 +3408,7 @@ void mouse(int button, int state, int x, int y)
                     scene = 0;
                 }
             }
-            if (state == GLUT_UP && enventory == 1)
+            if (state == GLUT_UP && enventry == 1)
             {
                 int w = glutGet(GLUT_WINDOW_WIDTH);
                 int h = glutGet(GLUT_WINDOW_HEIGHT);
@@ -4677,7 +3419,6 @@ void mouse(int button, int state, int x, int y)
                 int craftbox_x = itembox_x + 64 * 5;
                 int craftbox_y = enventry_y + 64;
                 int tmp1, tmp2, tmp3, tmp4;
-
                 if (craftbox_x <= x && x < craftbox_x + 64 * 2 && craftbox_y <= y && y < craftbox_y + 64 * 2)
                 {
                     int click_state = ((x - craftbox_x) / 64) + 2 * ((y - craftbox_y) / 64);
@@ -4688,17 +3429,14 @@ void mouse(int button, int state, int x, int y)
                             if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = craft_itembox[click_state][0];
                                 dragging_item[1] = craft_itembox[click_state][1];
                                 dragging_item[2] = craft_itembox[click_state][2];
                                 dragging_item[3] = craft_itembox[click_state][3];
-
                                 craft_itembox[click_state][0] = tmp1;
                                 craft_itembox[click_state][1] = tmp2;
                                 craft_itembox[click_state][2] = tmp3;
@@ -4737,17 +3475,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = craft_itembox[click_state][0];
                                 dragging_item[1] = craft_itembox[click_state][1];
                                 dragging_item[2] = craft_itembox[click_state][2];
                                 dragging_item[3] = craft_itembox[click_state][3];
-
                                 craft_itembox[click_state][0] = tmp1;
                                 craft_itembox[click_state][1] = tmp2;
                                 craft_itembox[click_state][2] = tmp3;
@@ -4770,165 +3505,13 @@ void mouse(int button, int state, int x, int y)
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64 * 3)
                 {
                     int click_state = ((x - itembox_x) / 64) + 9 * ((y - itembox_y) / 64) + 9;
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[2] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) = dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) = dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) = dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
                 itembox_y = enventry_y + 32 * 17;
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64)
                 {
                     int click_state = ((x - itembox_x) / 64);
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) += dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) += dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
             }
             else if (state == GLUT_UP && craft == 1)
@@ -4953,17 +3536,14 @@ void mouse(int button, int state, int x, int y)
                             if (bigcraft_itembox[click_state][1] > 1025 && bigcraft_itembox[click_state][1] < 1031)
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = bigcraft_itembox[click_state][0];
                                 dragging_item[1] = bigcraft_itembox[click_state][1];
                                 dragging_item[2] = bigcraft_itembox[click_state][2];
                                 dragging_item[3] = bigcraft_itembox[click_state][3];
-
                                 bigcraft_itembox[click_state][0] = tmp1;
                                 bigcraft_itembox[click_state][1] = tmp2;
                                 bigcraft_itembox[click_state][2] = tmp3;
@@ -5002,17 +3582,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = click_state;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = bigcraft_itembox[click_state][0];
                                 dragging_item[1] = bigcraft_itembox[click_state][1];
                                 dragging_item[2] = bigcraft_itembox[click_state][2];
                                 dragging_item[3] = bigcraft_itembox[click_state][3];
-
                                 bigcraft_itembox[click_state][0] = tmp1;
                                 bigcraft_itembox[click_state][1] = tmp2;
                                 bigcraft_itembox[click_state][2] = tmp3;
@@ -5035,165 +3612,13 @@ void mouse(int button, int state, int x, int y)
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64 * 3)
                 {
                     int click_state = ((x - itembox_x) / 64) + 9 * ((y - itembox_y) / 64) + 9;
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[2] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) = dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) = dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) = dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
                 itembox_y = enventry_y + 32 * 17;
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64)
                 {
                     int click_state = ((x - itembox_x) / 64);
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) += dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) += dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
             }
             else if (state == GLUT_UP && fire == 1)
@@ -5221,17 +3646,14 @@ void mouse(int button, int state, int x, int y)
                             if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = material_item[0];
                                 dragging_item[1] = material_item[1];
                                 dragging_item[2] = material_item[2];
                                 dragging_item[3] = material_item[3];
-
                                 material_item[0] = tmp1;
                                 material_item[1] = tmp2;
                                 material_item[2] = tmp3;
@@ -5270,17 +3692,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = material_item[0];
                                 dragging_item[1] = material_item[1];
                                 dragging_item[2] = material_item[2];
                                 dragging_item[3] = material_item[3];
-
                                 material_item[0] = tmp1;
                                 material_item[1] = tmp2;
                                 material_item[2] = tmp3;
@@ -5310,17 +3729,14 @@ void mouse(int button, int state, int x, int y)
                             if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = fuel_item[0];
                                 dragging_item[1] = fuel_item[1];
                                 dragging_item[2] = fuel_item[2];
                                 dragging_item[3] = fuel_item[3];
-
                                 fuel_item[0] = tmp1;
                                 fuel_item[1] = tmp2;
                                 fuel_item[2] = tmp3;
@@ -5359,17 +3775,14 @@ void mouse(int button, int state, int x, int y)
                             else
                             {
                                 dragging_item[0] = 0;
-                                // swap
                                 tmp1 = dragging_item[0];
                                 tmp2 = dragging_item[1];
                                 tmp3 = dragging_item[2];
                                 tmp4 = dragging_item[3];
-
                                 dragging_item[0] = fuel_item[0];
                                 dragging_item[1] = fuel_item[1];
                                 dragging_item[2] = fuel_item[2];
                                 dragging_item[3] = fuel_item[3];
-
                                 fuel_item[0] = tmp1;
                                 fuel_item[1] = tmp2;
                                 fuel_item[2] = tmp3;
@@ -5393,165 +3806,13 @@ void mouse(int button, int state, int x, int y)
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64 * 3)
                 {
                     int click_state = ((x - itembox_x) / 64) + 9 * ((y - itembox_y) / 64) + 9;
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[2] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) = dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) = dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) = dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
                 itembox_y = enventry_y + 32 * 17;
                 if (itembox_x <= x && x < itembox_x + 64 * 9 && itembox_y <= y && y < itembox_y + 64)
                 {
                     int click_state = ((x - itembox_x) / 64);
-                    if (dragging_item[0] != -1)
-                    {
-                        if (*(player_bag + 3 * click_state) == dragging_item[1])
-                        {
-                            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                            else
-                            {
-                                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
-                                {
-                                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                    dragging_item[0] = -1;
-                                    dragging_item[1] = 0;
-                                    dragging_item[2] = 0;
-                                    dragging_item[3] = -1;
-                                }
-                                else
-                                {
-                                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
-                                    *(player_bag + 3 * click_state + 1) = 64;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (*(player_bag + 3 * click_state) == 0)
-                            {
-                                *(player_bag + 3 * click_state + 0) += dragging_item[1];
-                                *(player_bag + 3 * click_state + 1) += dragging_item[2];
-                                *(player_bag + 3 * click_state + 2) += dragging_item[3];
-                                dragging_item[0] = -1;
-                                dragging_item[1] = 0;
-                                dragging_item[2] = 0;
-                                dragging_item[3] = -1;
-                            }
-                            else
-                            {
-                                dragging_item[0] = click_state;
-                                // swap
-                                tmp1 = dragging_item[1];
-                                tmp2 = dragging_item[2];
-                                tmp3 = dragging_item[3];
-
-                                dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                                dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                                dragging_item[3] = *(player_bag + 3 * click_state + 2);
-
-                                *(player_bag + 3 * click_state + 0) = tmp1;
-                                *(player_bag + 3 * click_state + 1) = tmp2;
-                                *(player_bag + 3 * click_state + 2) = tmp3;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dragging_item[0] = click_state;
-                        dragging_item[1] = *(player_bag + 3 * click_state + 0);
-                        dragging_item[2] = *(player_bag + 3 * click_state + 1);
-                        dragging_item[3] = *(player_bag + 3 * click_state + 2);
-                        *(player_bag + 3 * click_state + 0) = 0;
-                        *(player_bag + 3 * click_state + 1) = 0;
-                        *(player_bag + 3 * click_state + 2) = -1;
-                    }
+                    ClickItemBag(click_state);
                 }
             }
         }
@@ -5566,7 +3827,7 @@ void motion(int x, int y)
         mouse_x = x;
         mouse_y = y;
     }
-    else if (scene == 2)
+    else if (scene == 1)
     {
         glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
         mouse_x = x;
@@ -5601,17 +3862,21 @@ void draging(int x, int y)
     if (scene == 0)
     {
         glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
+        mouse_x = x;
+        mouse_y = y;
     }
-    else if (scene == 2)
+    else if (scene == 1)
     {
         glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
+        mouse_x = x;
+        mouse_y = y;
     }
     else if(scene == 3)
     {
         if (pause == 0)
         {
-            glutWarpPointer(mouse_x, mouse_y);
             glutSetCursor(GLUT_CURSOR_NONE);
+            glutWarpPointer(mouse_x, mouse_y);
             if (mouse_x - x != 0)
                 xz_rad -= (double)(mouse_x - x) * M_PI / 180.0 / 8.0;
             if (mouse_y - y != 0 && y_rad > -M_PI / 2.0 && y_rad < M_PI / 2.0)
@@ -5624,6 +3889,8 @@ void draging(int x, int y)
         else
         {
             glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
+            mouse_x = x;
+            mouse_y = y;
         }
     }
 }
@@ -5634,8 +3901,7 @@ void timer(int value)
     glutTimerFunc(1, timer, 0);
 }
 
-// Wavelet
-void Wavelet1d(double data[32], double amp)
+void Wavelet1d(double data[64], double amp)
 {
     double x_val;
     double dx;
@@ -5673,43 +3939,31 @@ void Wavelet2d(double data[256][256], double amp)
     }
 }
 
-// PerlinNoize
 void PerlinNoize1d(double *data, int chunk_xpos, int direction, int use_seed, unsigned int seed)
 {
     int noizeport_x = chunk_xpos / 2;
     int mod_chunk_xpos = chunk_xpos % 2;
-
-    double C[64];    // Wavelet data
-    double W[32][2]; // Graph data for marge
-    double a[32][3]; // Gradient data
-
+    double C[64];
+    double W[32][2];
+    double a[32][3];
     double dx;
-
-    // Wavelet function
     Wavelet1d(C, 5.0);
-
-    // set seed value
     if (use_seed == 1)
         srand(seed);
     else
         srand((unsigned int)time(NULL));
-
-    // set random gradient
     for (int i = 0; i < 32; i++)
     {
         a[i][0] = (double)(rand() - RAND_MAX / 2) / (double)RAND_MAX;
         a[i][1] = (double)(rand() - RAND_MAX / 2) / (double)RAND_MAX;
         a[i][2] = (double)(rand() - RAND_MAX / 2) / (double)RAND_MAX;
     }
-
     for (int x = 0; x < 32; x++)
     {
         dx = (double)x / 32.0;
-        // Calculate Graphs
         W[x][0] = a[noizeport_x][direction] * dx * C[x + 32];
         W[x][1] = a[noizeport_x + 1][direction] * (dx - 1.0) * C[x];
     }
-
     int xp;
     for (int x = 0; x < 16; x++)
     {
@@ -5725,24 +3979,16 @@ void PerlinNoize2di(int *data, int chunk_xpos, int chunk_zpos, int use_seed, uns
     int noizeport_z = chunk_zpos / 8;
     int mod_chunk_xpos = chunk_xpos % 8;
     int mod_chunk_zpos = chunk_zpos % 8;
-
-    double C[256][256];     // Wavelet data
-    double W[128][128][4];  // Graph data for marge
-    double Wp[128][128][2]; // Graph data (marge z)
-    double a[9][9][2];      // Gradient data
-
+    double C[256][256];
+    double W[128][128][4];
+    double Wp[128][128][2];
+    double a[9][9][2];
     double dx, dz;
-
-    // Wavelet function
     Wavelet2d(C, 256.0);
-
-    // set seed value
     if (use_seed == 1)
         srand(seed);
     else
         srand((unsigned int)time(NULL));
-
-    // set random gradient
     for (int l = 0; l <= loops; l++)
     {
         for (int i = 0; i < 9; i++)
@@ -5760,8 +4006,6 @@ void PerlinNoize2di(int *data, int chunk_xpos, int chunk_zpos, int use_seed, uns
         for (int z = 0; z < 128; z++)
         {
             dz = (double)z / 128.0;
-
-            // Calculate Graphs
             W[x][z][0] = (a[noizeport_x][noizeport_z][0] * dx + a[noizeport_x][noizeport_z][1] * dz) * C[x + 128][z + 128];
             W[x][z][1] = (a[noizeport_x][noizeport_z + 1][0] * dx + a[noizeport_x][noizeport_z + 1][1] * (dz - 1.0)) * C[x + 128][z];
             W[x][z][2] = (a[noizeport_x + 1][noizeport_z][0] * (dx - 1.0) + a[noizeport_x + 1][noizeport_z][1] * dz) * C[x][z + 128];
@@ -5774,8 +4018,6 @@ void PerlinNoize2di(int *data, int chunk_xpos, int chunk_zpos, int use_seed, uns
         for (int z = 0; z < 128; z++)
         {
             dz = (double)z / 128.0;
-
-            // marge (way: z)
             Wp[x][z][0] = W[x][z][0] + dz * (W[x][z][1] - W[x][z][0]);
             Wp[x][z][1] = W[x][z][2] + dz * (W[x][z][3] - W[x][z][2]);
         }
@@ -5788,7 +4030,6 @@ void PerlinNoize2di(int *data, int chunk_xpos, int chunk_zpos, int use_seed, uns
         for (int z = 0; z < 16; z++)
         {
             zp = 16 * mod_chunk_zpos + z;
-            // marge (way: x)
             *(data + 16 * x + z) = 84 + lround(Wp[xp][zp][0] + dx * (Wp[xp][zp][1] - Wp[xp][zp][0]));
         }
     }
@@ -5800,24 +4041,16 @@ void PerlinNoize2dd(double *data, int chunk_xpos, int chunk_zpos, int use_seed, 
     int noizeport_z = chunk_zpos / 8;
     int mod_chunk_xpos = chunk_xpos % 8;
     int mod_chunk_zpos = chunk_zpos % 8;
-
-    double C[256][256];     // Wavelet data
-    double W[128][128][4];  // Graph data for marge
-    double Wp[128][128][2]; // Graph data (marge z)
-    double a[9][9][2];      // Gradient data
-
+    double C[256][256];
+    double W[128][128][4];
+    double Wp[128][128][2];
+    double a[9][9][2];
     double dx, dz;
-
-    // Wavelet function
     Wavelet2d(C, 1.0);
-
-    // set seed value
     if (use_seed == 1)
         srand(seed);
     else
         srand((unsigned int)time(NULL));
-
-    // set random gradient
     for (int l = 0; l <= loops; l++)
     {
         for (int i = 0; i < 9; i++)
@@ -5829,29 +4062,23 @@ void PerlinNoize2dd(double *data, int chunk_xpos, int chunk_zpos, int use_seed, 
             }
         }
     }
-
     for (int x = 0; x < 128; x++)
     {
         dx = (double)x / 128.0;
         for (int z = 0; z < 128; z++)
         {
             dz = (double)z / 128.0;
-
-            // Calculate Graphs
             W[x][z][0] = (a[noizeport_x][noizeport_z][0] * dx + a[noizeport_x][noizeport_z][1] * dz) * C[x + 128][z + 128];
             W[x][z][1] = (a[noizeport_x][noizeport_z + 1][0] * dx + a[noizeport_x][noizeport_z + 1][1] * (dz - 1.0)) * C[x + 128][z];
             W[x][z][2] = (a[noizeport_x + 1][noizeport_z][0] * (dx - 1.0) + a[noizeport_x + 1][noizeport_z][1] * dz) * C[x][z + 128];
             W[x][z][3] = (a[noizeport_x + 1][noizeport_z + 1][0] * (dx - 1.0) + a[noizeport_x + 1][noizeport_z + 1][1] * (dz - 1.0)) * C[x][z];
         }
     }
-
     for (int x = 0; x < 128; x++)
     {
         for (int z = 0; z < 128; z++)
         {
             dz = (double)z / 128.0;
-
-            // marge (way: z)
             Wp[x][z][0] = W[x][z][0] + dz * (W[x][z][1] - W[x][z][0]);
             Wp[x][z][1] = W[x][z][2] + dz * (W[x][z][3] - W[x][z][2]);
         }
@@ -5864,7 +4091,6 @@ void PerlinNoize2dd(double *data, int chunk_xpos, int chunk_zpos, int use_seed, 
         for (int z = 0; z < 16; z++)
         {
             zp = 16 * mod_chunk_zpos + z;
-            // marge (way: x)
             *(data + 16 * x + z) = Wp[xp][zp][0] + dx * (Wp[xp][zp][1] - Wp[xp][zp][0]);
         }
     }
@@ -5873,148 +4099,15 @@ void PerlinNoize2dd(double *data, int chunk_xpos, int chunk_zpos, int use_seed, 
 double JumpVelocity(double start_velocity, double acceleration, double air_resistance, int tick)
 {
     double curt_velocity, item1, item2;
-    // calculate item 1
     item1 = start_velocity;
     for (int i = 0; i < tick; i++)
         item1 *= (1.0 - air_resistance);
-
-    // calculate item 2
     item2 = 1.0;
     for (int i = 0; i < tick; i++)
         item2 *= (1.0 - air_resistance);
     item2 = acceleration * (1.0 - air_resistance) * (1.0 - item2) / air_resistance;
-
-    // marge items
     curt_velocity = item1 - item2;
     return curt_velocity;
-}
-
-void DrawPlayer(void)
-{
-    if (camera_perspective_mode != 0)
-    {
-        double px[8], pfx[8], bx[8], bfx[8][2];
-        double pz[8], pfz[8], bz[8], bfz[8][2];
-        double pfy[8], by[8], bfy[8][2];
-        double py1, py2;
-
-        // load rot model
-        for (int i = 0; i < 8; i++)
-        {
-            bx[i] = player_model_pos_info[0][i % 2];
-            by[i] = player_model_pos_info[0][2 + (i / 4)];
-            bz[i] = player_model_pos_info[0][4 + ((i / 2) % 2)];
-        }
-
-        for (int i = 0; i < 8; i++)
-        {
-            bfx[i][0] = bx[i] * cos(arm_rad) - by[i] * sin(arm_rad);
-            bfy[i][0] = bx[i] * sin(arm_rad) + by[i] * cos(arm_rad);
-            bfx[i][1] = bx[i] * cos(-arm_rad) - by[i] * sin(-arm_rad);
-            bfy[i][1] = bx[i] * sin(-arm_rad) + by[i] * cos(-arm_rad);
-            bfz[i][0] = bz[i];
-            bfz[i][1] = bz[i];
-        }
-
-        // Player -rot model-
-        // buttom1 -> buttom2 -> arm2 -> arm1
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 8; j++)
-            {
-                if (i % 2 == 0)
-                {
-                    px[j] = player_model_mov_info[i][0] + bfx[j][0];
-                    pfy[j] = player_model_mov_info[i][1] + bfy[j][0];
-                    pz[j] = player_model_mov_info[i][2] + bfz[j][0];
-                }
-                else
-                {
-                    px[j] = player_model_mov_info[i][0] + bfx[j][1];
-                    pfy[j] = player_model_mov_info[i][1] + bfy[j][1];
-                    pz[j] = player_model_mov_info[i][2] + bfz[j][1];
-                }
-                pfx[j] = px[j] * cos(xz_rad) - pz[j] * sin(xz_rad);
-                pfz[j] = px[j] * sin(xz_rad) + pz[j] * cos(xz_rad);
-            }
-            glColor3f(player_model_color_info[i][0], player_model_color_info[i][1], player_model_color_info[i][2]);
-            glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
-            glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
-            glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
-            glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
-
-            glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
-            glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
-            glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
-            glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
-
-            glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
-            glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
-            glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
-            glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
-
-            glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
-            glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
-            glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
-            glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
-
-            glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
-            glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
-            glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
-            glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
-
-            glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
-            glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
-            glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
-            glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
-        }
-
-        // Player -non-rot model-
-        // body -> head
-        for (int i = 0; i < 2; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-                px[j] = player_model_pos_info[i + 1][j % 2];
-                pz[j] = player_model_pos_info[i + 1][4 + j / 2];
-                pfx[j] = px[j] * cos(xz_rad) - pz[j] * sin(xz_rad);
-                pfz[j] = px[j] * sin(xz_rad) + pz[j] * cos(xz_rad);
-            }
-            py1 = player_model_pos_info[i + 1][2];
-            py2 = player_model_pos_info[i + 1][3];
-
-            glColor3f(player_model_color_info[i + 4][0], player_model_color_info[i + 4][1], player_model_color_info[i + 4][2]);
-            glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
-            glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
-            glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
-            glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
-
-            glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
-            glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
-            glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
-            glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
-
-            glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
-            glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
-            glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
-            glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
-
-            glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
-            glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
-            glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
-            glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
-
-            glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
-            glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
-            glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
-            glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
-
-            glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
-            glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
-            glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
-            glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
-        }
-    }
 }
 
 void CreateChunk(int chunk_x, int chunk_z)
@@ -6027,13 +4120,11 @@ void CreateChunk(int chunk_x, int chunk_z)
     double rate_rate;
     int wood_judge;
     int tmp;
-
     onechunk3d = (int *)malloc(sizeof(int) * 16 * 256 * 16);
     onechunk2d = (int *)malloc(sizeof(int) * 16 * 16);
     biome = (double *)malloc(sizeof(double) * 16 * 16);
     onechunk1d_x = (double *)malloc(sizeof(double) * 16);
     onechunk1d_z = (double *)malloc(sizeof(double) * 16);
-
     srand(SEED_NUM);
     int i = chunk_x;
     int j = chunk_z;
@@ -6067,10 +4158,10 @@ void CreateChunk(int chunk_x, int chunk_z)
                     }
                     if (y < 128 && y < *(onechunk2d + 16 * x + z) - 3)
                     {
-                        if (y >= 8 || y <= 50)
+                        if (y >= 8 && y <= 50)
                             rate_rate = 1.0;
                         else if (y < 8)
-                            rate_rate = (1.0 - (double)(y) / 8.0);
+                            rate_rate = ((double)(y) / 8.0);
                         else if (y > 50)
                             rate_rate = (double)(128 - y) / 78.0;
                         if (*(coal_rate + 524288 * (i % (WORLD_CHUNK / 4)) + 32768 * (j % (WORLD_CHUNK / 4)) + 2048 * x + 16 * y + z) <= (coal_create_rate * rate_rate))
@@ -6078,10 +4169,10 @@ void CreateChunk(int chunk_x, int chunk_z)
                     }
                     if (y < 64 && y < *(onechunk2d + 16 * x + z) - 3)
                     {
-                        if (y >= 7 || y <= 57)
+                        if (y >= 7 && y <= 57)
                             rate_rate = 1.0;
                         else if (y < 7)
-                            rate_rate = (1.0 - (double)(y) / 7.0);
+                            rate_rate = ((double)(y) / 7.0);
                         else if (y > 57)
                             rate_rate = (double)(64 - y) / 7.0;
                         if (*(iron_rate + 262144 * (i % (WORLD_CHUNK / 4)) + 16384 * (j % (WORLD_CHUNK / 4)) + 1024 * x + 16 * y + z) <= (iron_create_rate * rate_rate))
@@ -6089,10 +4180,10 @@ void CreateChunk(int chunk_x, int chunk_z)
                     }
                     if (y < 32 && y < *(onechunk2d + 16 * x + z) - 3)
                     {
-                        if (y >= 5 || y <= 28)
+                        if (y >= 5 && y <= 28)
                             rate_rate = 1.0;
                         else if (y < 5)
-                            rate_rate = (1.0 - (double)(y) / 5.0);
+                            rate_rate = ((double)(y) / 5.0);
                         else if (y > 28)
                             rate_rate = (double)(32 - y) / 4.0;
                         if (*(gold_rate + 131072 * (i % (WORLD_CHUNK / 4)) + 8192 * (j % (WORLD_CHUNK / 4)) + 512 * x + 16 * y + z) <= (gold_create_rate * rate_rate))
@@ -6100,10 +4191,10 @@ void CreateChunk(int chunk_x, int chunk_z)
                     }
                     if (y < 16 && y < *(onechunk2d + 16 * x + z) - 3)
                     {
-                        if (y >= 5 || y <= 12)
+                        if (y >= 5 && y <= 12)
                             rate_rate = 1.0;
                         else if (y < 5)
-                            rate_rate = (1.0 - (double)(y) / 5.0);
+                            rate_rate = ((double)(y) / 5.0);
                         else if (y > 12)
                             rate_rate = (double)(15 - y) / 3.0;
                         if (*(diamond_rate + 65536 * (i % (WORLD_CHUNK / 4)) + 4096 * (j % (WORLD_CHUNK / 4)) + 256 * x + 16 * y + z) <= (diamond_create_rate * rate_rate))
@@ -6154,7 +4245,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                             {
                                 for (int b = -2; b <= 2; b++)
                                 {
-                                    // #1
                                     if (x + a < 0 && z + b < 0)
                                     {
                                         if (i < 1 || j < 1)
@@ -6162,7 +4252,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * (i - 1) + 256 * (j - 1) + 16 * (16 + x + a) + (16 + z + b));
                                     }
-                                    // #2
                                     else if (x + a < 0 && z + b >= 0 && z + b < 16)
                                     {
                                         if (i < 1)
@@ -6170,7 +4259,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * (i - 1) + 256 * j + 16 * (16 + x + a) + z + b);
                                     }
-                                    // #3
                                     else if (x + a < 0 && z + b <= 16)
                                     {
                                         if (i < 1 || j >= WORLD_CHUNK - 1)
@@ -6178,7 +4266,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * (i - 1) + 256 * (j + 1) + 16 * (16 + x + a) + (-16 + z + b));
                                     }
-                                    // #4
                                     else if (x + a >= 0 && x + a < 16 && z + b < 0)
                                     {
                                         if (j < 1)
@@ -6186,10 +4273,8 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * i + 256 * (j - 1) + 16 * (x + a) + (16 + z + b));
                                     }
-                                    // #5
                                     else if (x + a >= 0 && x + a < 16 && z + b >= 0 && z + b < 16)
                                         tmp = *(wood_put + 16384 * i + 256 * j + 16 * (x + a) + (z + b));
-                                    // #6
                                     else if (x + a >= 0 && x + a < 16 && z + b >= 16)
                                     {
                                         if (j >= WORLD_CHUNK - 1)
@@ -6197,7 +4282,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * i + 256 * (j + 1) + 16 * (x + a) + (-16 + z + b));
                                     }
-                                    // #7
                                     else if (x + a >= 16 && z + b < 0)
                                     {
                                         if (i >= WORLD_CHUNK - 1 && j < 1)
@@ -6205,7 +4289,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * (i + 1) + 256 * (j - 1) + 16 * (-16 + x + a) + (16 + z + b));
                                     }
-                                    // #8
                                     else if (x + a >= 16 && z + b >= 0 && z + b < 16)
                                     {
                                         if (i >= WORLD_CHUNK - 1)
@@ -6213,7 +4296,6 @@ void CreateChunk(int chunk_x, int chunk_z)
                                         else
                                             tmp = *(wood_put + 16384 * (i + 1) + 256 * j + 16 * (-16 + x + a) + (z + b));
                                     }
-                                    // #9
                                     else if (x + a >= 16 && z + b >= 16)
                                     {
                                         if (i >= WORLD_CHUNK - 1 && j >= WORLD_CHUNK - 1)
@@ -6273,6 +4355,133 @@ void CreateChunk(int chunk_x, int chunk_z)
     free(biome);
 }
 
+void DrawPlayer(void)
+{
+    double player_model_pos_info[3][6] = {
+        {-0.1125, 0.1125, 0.1125, -0.5625, -0.1125, 0.1125},
+        {-0.1125, 0.1125, -0.825, -0.15, -0.225, 0.225},
+        {-0.225, 0.225, -0.15, 0.3, -0.225, 0.225}
+        };
+    double player_model_mov_info[4][3] = {
+        {0.0, -0.9375, 0.1125},
+        {0.0, -0.9375, -0.1125},
+        {0.0, -0.2625, -0.3375},
+        {0.0, -0.2625, 0.3375}
+        };
+    double player_model_color_info[6][3] = {
+        {0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {0.0, 1.0, 0.0},
+        {0.0, 1.0, 0.0},
+        {0.0, 1.0, 1.0},
+        {1.0, 0.5, 0.0}
+        };
+    if (camera_perspective_mode != 0)
+    {
+        double px[8], pfx[8], bx[8], bfx[8][2];
+        double pz[8], pfz[8], bz[8], bfz[8][2];
+        double pfy[8], by[8], bfy[8][2];
+        double py1, py2;
+        for (int i = 0; i < 8; i++)
+        {
+            bx[i] = player_model_pos_info[0][i % 2];
+            by[i] = player_model_pos_info[0][2 + (i / 4)];
+            bz[i] = player_model_pos_info[0][4 + ((i / 2) % 2)];
+        }
+        for (int i = 0; i < 8; i++)
+        {
+            bfx[i][0] = bx[i] * cos(arm_rad) - by[i] * sin(arm_rad);
+            bfy[i][0] = bx[i] * sin(arm_rad) + by[i] * cos(arm_rad);
+            bfx[i][1] = bx[i] * cos(-arm_rad) - by[i] * sin(-arm_rad);
+            bfy[i][1] = bx[i] * sin(-arm_rad) + by[i] * cos(-arm_rad);
+            bfz[i][0] = bz[i];
+            bfz[i][1] = bz[i];
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (i % 2 == 0)
+                {
+                    px[j] = player_model_mov_info[i][0] + bfx[j][0];
+                    pfy[j] = player_model_mov_info[i][1] + bfy[j][0];
+                    pz[j] = player_model_mov_info[i][2] + bfz[j][0];
+                }
+                else
+                {
+                    px[j] = player_model_mov_info[i][0] + bfx[j][1];
+                    pfy[j] = player_model_mov_info[i][1] + bfy[j][1];
+                    pz[j] = player_model_mov_info[i][2] + bfz[j][1];
+                }
+                pfx[j] = px[j] * cos(xz_rad) - pz[j] * sin(xz_rad);
+                pfz[j] = px[j] * sin(xz_rad) + pz[j] * cos(xz_rad);
+            }
+            glColor3f(player_model_color_info[i][0], player_model_color_info[i][1], player_model_color_info[i][2]);
+            glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
+            glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
+            glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
+            glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
+            glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
+            glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
+            glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
+            glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
+            glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
+            glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
+            glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
+            glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
+            glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
+            glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
+            glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
+            glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
+            glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
+            glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
+            glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
+            glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
+            glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
+            glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
+            glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
+            glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                px[j] = player_model_pos_info[i + 1][j % 2];
+                pz[j] = player_model_pos_info[i + 1][4 + j / 2];
+                pfx[j] = px[j] * cos(xz_rad) - pz[j] * sin(xz_rad);
+                pfz[j] = px[j] * sin(xz_rad) + pz[j] * cos(xz_rad);
+            }
+            py1 = player_model_pos_info[i + 1][2];
+            py2 = player_model_pos_info[i + 1][3];
+            glColor3f(player_model_color_info[i + 4][0], player_model_color_info[i + 4][1], player_model_color_info[i + 4][2]);
+            glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
+            glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
+            glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
+            glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
+            glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
+            glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
+            glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
+            glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
+            glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
+            glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
+            glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
+            glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
+            glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
+            glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
+            glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
+            glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
+            glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
+            glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
+            glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
+            glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
+            glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
+            glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
+            glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
+            glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
+        }
+    }
+}
+
 void SaveChunk(int *chunk, int savex, int savey)
 {
     char filename[30];
@@ -6299,14 +4508,14 @@ void LoadChunk(int *chunk, int loadx, int loady)
 
 void SaveItem(int *bag)
 {
-    FILE *f = fopen("player_bag", "wb");
+    FILE *f = fopen("data/player_bag.dat", "wb");
     fwrite(bag, sizeof(int), 108, f);
     fclose(f);
 }
 
 void LoadItem(int *bag)
 {
-    FILE *f = fopen("player_bag", "rb");
+    FILE *f = fopen("data/player_bag.dat", "rb");
     if (f == NULL)
         for (int i = 0; i < 36; i++)
         {
@@ -6319,16 +4528,38 @@ void LoadItem(int *bag)
     fclose(f);
 }
 
+void LoadRecipe22(int *bag)
+{
+    FILE *f = fopen("data/recipe22.dat", "rb");
+    if (f == NULL)
+        for (int i = 0; i < recipe22_num*7; i++)
+            *(recipe22 + i) = -1;
+    else
+        fread(recipe22, sizeof(int), recipe22_num*7, f);
+    fclose(f);
+}
+
+void LoadRecipe33(int *bag)
+{
+    FILE *f = fopen("data/recipe33.dat", "rb");
+    if (f == NULL)
+        for (int i = 0; i < recipe33_num*12; i++)
+            *(recipe33 + i) = -1;
+    else
+        fread(recipe33, sizeof(int), recipe33_num*12, f);
+    fclose(f);
+}
+
 void SaveStatus(int *status)
 {
-    FILE *f = fopen("player_status", "wb");
+    FILE *f = fopen("data/player_status.dat", "wb");
     fwrite(status, sizeof(int), 2, f);
     fclose(f);
 }
 
 void LoadStatus(int *status)
 {
-    FILE *f = fopen("player_status", "rb");
+    FILE *f = fopen("data/player_status.dat", "rb");
     if (f == NULL)
     {
         *(status + 0) = 20;
@@ -6349,7 +4580,6 @@ void DrawTexBlock2d(int x, int y, double tex_pu, double tex_pd)
     glVertex2i(x + 32, y + 32);
     glTexCoord2f(0, tex_pd);
     glVertex2i(x + 8, y + 16);
-
     glTexCoord2f(0.125, tex_pu);
     glVertex2i(x + 8, y + 16);
     glTexCoord2f(0.25, tex_pu);
@@ -6358,7 +4588,6 @@ void DrawTexBlock2d(int x, int y, double tex_pu, double tex_pd)
     glVertex2i(x + 32, y + 56);
     glTexCoord2f(0.125, tex_pd);
     glVertex2i(x + 8, y + 40);
-
     glTexCoord2f(0.125, tex_pu);
     glVertex2i(x + 32, y + 32);
     glTexCoord2f(0.25, tex_pu);
@@ -6379,4 +4608,82 @@ void DrawTexItem(int x, int y, double tex_pu, double tex_pd, double tex_pr, doub
     glVertex2i(x + 56, y + 56);
     glTexCoord2f(tex_pr, tex_pd);
     glVertex2i(x + 8, y + 56);
+}
+
+void DrawRect(int xs, int xe, int ys, int ye)
+{
+    glVertex2i(xs, ys);
+    glVertex2i(xe, ys);
+    glVertex2i(xe, ye);
+    glVertex2i(xs, ye);
+}
+
+void ClickItemBag(int click_state)
+{
+    if (dragging_item[0] != -1)
+    {
+        if (*(player_bag + 3 * click_state) == dragging_item[1])
+        {
+            if (dragging_item[1] > 1025 && dragging_item[1] < 1041)
+                SwapCursorToItemBag(click_state);
+            else
+            {
+                if (*(player_bag + 3 * click_state + 1) + dragging_item[2] <= 64)
+                {
+                    *(player_bag + 3 * click_state + 1) += dragging_item[2];
+                    dragging_item[0] = -1;
+                    dragging_item[1] = 0;
+                    dragging_item[2] = 0;
+                    dragging_item[3] = -1;
+                }
+                else
+                {
+                    dragging_item[2] = *(player_bag + 3 * click_state + 1) + dragging_item[2] - 64;
+                    *(player_bag + 3 * click_state + 1) = 64;
+                }
+            }
+        }
+        else
+        {
+            if (*(player_bag + 3 * click_state) == 0)
+            {
+                *(player_bag + 3 * click_state + 0) = dragging_item[1];
+                *(player_bag + 3 * click_state + 1) = dragging_item[2];
+                *(player_bag + 3 * click_state + 2) = dragging_item[3];
+                dragging_item[0] = -1;
+                dragging_item[1] = 0;
+                dragging_item[2] = 0;
+                dragging_item[3] = -1;
+            }
+            else
+                SwapCursorToItemBag(click_state);
+        }
+    }
+    else
+    {
+        dragging_item[0] = click_state;
+        dragging_item[1] = *(player_bag + 3 * click_state + 0);
+        dragging_item[2] = *(player_bag + 3 * click_state + 1);
+        dragging_item[3] = *(player_bag + 3 * click_state + 2);
+        *(player_bag + 3 * click_state + 0) = 0;
+        *(player_bag + 3 * click_state + 1) = 0;
+        *(player_bag + 3 * click_state + 2) = -1;
+    }
+}
+
+void SwapCursorToItemBag(int click_state)
+{
+    int tmp1;
+    int tmp2;
+    int tmp3;
+    dragging_item[0] = click_state;
+    tmp1 = dragging_item[1];
+    tmp2 = dragging_item[2];
+    tmp3 = dragging_item[3];
+    dragging_item[1] = *(player_bag + 3 * click_state + 0);
+    dragging_item[2] = *(player_bag + 3 * click_state + 1);
+    dragging_item[3] = *(player_bag + 3 * click_state + 2);
+    *(player_bag + 3 * click_state + 0) = tmp1;
+    *(player_bag + 3 * click_state + 1) = tmp2;
+    *(player_bag + 3 * click_state + 2) = tmp3;
 }
