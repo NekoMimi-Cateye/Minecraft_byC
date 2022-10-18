@@ -37,6 +37,8 @@ void specialup(int, int, int);
 void DrawRect(int, int, int, int);
 void ClickItemBag(int);
 void SwapCursorToItemBag(int);
+void DrawTexRect(int, int, int, int, double, double, double, double);
+
 double *biome;
 double *diamond_rate;
 double *gold_rate;
@@ -232,6 +234,8 @@ GLuint img;
 pngInfo info;
 GLuint img2;
 pngInfo info2;
+GLuint img3;
+pngInfo info3;
 
 int main(int argc, char **argv)
 {
@@ -259,6 +263,7 @@ int main(int argc, char **argv)
     glutTimerFunc(100, timer, 0);
     img = pngBind("img/texture.png", PNG_NOMIPMAP, PNG_ALPHA, &info, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     img2 = pngBind("img/logo.png", PNG_NOMIPMAP, PNG_ALPHA, &info2, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    img3 = pngBind("img/status.png", PNG_NOMIPMAP, PNG_ALPHA, &info3, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     glutMainLoop();
     return (0);
 }
@@ -1451,80 +1456,57 @@ void render(void)
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[0]);
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, items_str[1]);
             }
+
+            glPushMatrix();
+            glEnable(GL_TEXTURE_2D);
+            glColor4ub(255, 255, 255, 255);
+            glBindTexture(GL_TEXTURE_2D, img3);
+            glBegin(GL_QUADS);
             for (int i = 0; i < 10; i++)
             {
-                if (2 * i < *(player_status))
-                    glColor3f(1.0, 0.0, 0.0);
-                else
-                    glColor3f(0.0, 0.0, 0.0);
-
-                glBegin(GL_QUADS);
-                    DrawRect(itembox_x + 25 * i, itembox_x + 25 * i + 12, itembox_y - 23, itembox_y - 17);
-                glEnd();
-                glBegin(GL_TRIANGLES);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 18);
-                    glVertex2i(itembox_x + 25 * i + 6, itembox_y - 5 - 24);
-                    glVertex2i(itembox_x + 25 * i, itembox_y - 5 - 12);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                    glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
-                glEnd();
-
                 if (2 * i + 1 < *(player_status))
-                    glColor3f(1.0, 0.0, 0.0);
+                {
+                    tex_pu = 0;
+                    tex_pd = 0.25;
+                    DrawTexRect(itembox_x + 25 * i, itembox_x + 25 * i + 24, itembox_y - 5 - 29, itembox_y - 5, tex_pu, tex_pd, 0, 0.25);
+                }
+                else if (2 * i < *(player_status))
+                {
+                    tex_pu = 0.25;
+                    tex_pd = 0.5;
+                    DrawTexRect(itembox_x + 25 * i, itembox_x + 25 * i + 24, itembox_y - 5 - 29, itembox_y - 5, tex_pu, tex_pd, 0, 0.25);
+                }
                 else
-                    glColor3f(0.0, 0.0, 0.0);
-                glBegin(GL_QUADS);
-                    DrawRect(itembox_x + 25 * i + 12, itembox_x + 25 * i + 24, itembox_y - 23, itembox_y - 17);
-                glEnd();
-                glBegin(GL_TRIANGLES);
-                glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 18);
-                glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 18);
-                glVertex2i(itembox_x + 25 * i + 18, itembox_y - 5 - 24);
-                glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5 - 12);
-                glVertex2i(itembox_x + 25 * i + 24, itembox_y - 5 - 12);
-                glVertex2i(itembox_x + 25 * i + 12, itembox_y - 5);
-                glEnd();
+                {
+                    tex_pu = 0.5;
+                    tex_pd = 0.75;
+                    DrawTexRect(itembox_x + 25 * i, itembox_x + 25 * i + 24, itembox_y - 5 - 29, itembox_y - 5, tex_pu, tex_pd, 0, 0.25);
+                }
             }
             for (int i = 0; i < 9; i++)
             {
-                if (2 * i < *(player_status + 1))
+                if (2 * i + 1 < *(player_status+1))
                 {
-                    glColor3f(1.0, 1.0, 0.0);
-                    glBegin(GL_TRIANGLES);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_y - 5 - 12);
-                    glEnd();
+                    tex_pu = 0;
+                    tex_pd = 0.25;
+                    DrawTexRect(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 29, itembox_y - 5, tex_pu, tex_pd, 0.25, 0.5);
+                }
+                else if (2 * i < *(player_status+1))
+                {
+                    tex_pu = 0.25;
+                    tex_pd = 0.5;
+                    DrawTexRect(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 29, itembox_y - 5, tex_pu, tex_pd, 0.25, 0.5);
                 }
                 else
                 {
-                    glColor3f(0.0, 0.0, 0.0);
-                    glBegin(GL_TRIANGLES);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_y - 5 - 12);
-                    glEnd();
-                }
-                if (2 * i + 1 < *(player_status + 1))
-                {
-                    glColor3f(1.0, 1.0, 0.0);
-                    glBegin(GL_TRIANGLES);
-                        glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                        glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                        glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 12);
-                    glEnd();
-                }
-                else
-                {
-                    glColor3f(0.0, 0.0, 0.0);
-                    glBegin(GL_TRIANGLES);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 0);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 12, itembox_y - 5 - 24);
-                    glVertex2i(itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 12);
-                    glEnd();
+                    tex_pu = 0.5;
+                    tex_pd = 0.75;
+                    DrawTexRect(itembox_x + 64 * 9 - 25 * 9 + 25 * i, itembox_x + 64 * 9 - 25 * 9 + 25 * i + 24, itembox_y - 5 - 29, itembox_y - 5, tex_pu, tex_pd, 0.25, 0.5);
                 }
             }
+            glEnd();
+            glDisable(GL_TEXTURE_2D);
+            glPopMatrix();
             glColor3f(1, 1, 1);
             glLineWidth(2.0);
             glBegin(GL_LINES);
@@ -4615,6 +4597,18 @@ void DrawRect(int xs, int xe, int ys, int ye)
     glVertex2i(xs, ys);
     glVertex2i(xe, ys);
     glVertex2i(xe, ye);
+    glVertex2i(xs, ye);
+}
+
+void DrawTexRect(int xs, int xe, int ys, int ye, double tex_pu, double tex_pd, double tex_pr, double tex_pl)
+{
+    glTexCoord2f(tex_pr, tex_pu);
+    glVertex2i(xs, ys);
+    glTexCoord2f(tex_pl, tex_pu);
+    glVertex2i(xe, ys);
+    glTexCoord2f(tex_pl, tex_pd);
+    glVertex2i(xe, ye);
+    glTexCoord2f(tex_pr, tex_pd);
     glVertex2i(xs, ye);
 }
 
