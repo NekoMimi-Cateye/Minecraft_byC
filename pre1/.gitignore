@@ -4,3 +4,4 @@ pre.exe.stackdump
 TODO.md
 recipetodat.c
 rtd.exe
+data/*_*.dat

@@ -5,6 +5,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
+#include "jfont.h"
+
 #define WORLD_CHUNK 64
 #define DRAW_DIST 8
 void Wavelet1d(double[256], double);
@@ -49,7 +51,7 @@ char *wood_put;
 double *onechunk1d_y;
 unsigned int SEED_NUM = 0;
 int seed_length=0;
-char seed_str[20]={0};
+char seed_str[32]={0};
 double player_x = 136.0;
 double player_y = 255.0;
 double player_z = 136.0;
@@ -214,6 +216,7 @@ int* recipe22;
 int recipe33_num = 60;
 int* recipe33;
 int furnace_ope = 0;
+int world_tick = 9000;
 double furnace_opetime = 0;
 double furnace_createtime = 10.0;
 double furnace_fueltime = 0.0;
@@ -230,12 +233,19 @@ int durability_list[15] =
 int durability_empty_list[15] =
     {3, 6, 10, 2, 61, 3, 6, 10, 2, 61, 3, 6, 10, 2, 61};
 char items_str[3];
+int raining = 0;
+int rain_x[128];
+int rain_y[128];
+
+int see_item;
 GLuint img;
 pngInfo info;
 GLuint img2;
 pngInfo info2;
 GLuint img3;
 pngInfo info3;
+GLuint img4;
+pngInfo info4;
 
 int main(int argc, char **argv)
 {
@@ -250,7 +260,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_ALPHA);
     glutInitWindowSize(640, 480);
     glutEnterGameMode();
-    glClearColor(0.0, 1.0, 1.0, 1.0);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glutDisplayFunc(render);
     glutReshapeFunc(reshape);
@@ -264,6 +274,7 @@ int main(int argc, char **argv)
     img = pngBind("img/texture.png", PNG_NOMIPMAP, PNG_ALPHA, &info, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     img2 = pngBind("img/logo.png", PNG_NOMIPMAP, PNG_ALPHA, &info2, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     img3 = pngBind("img/status.png", PNG_NOMIPMAP, PNG_ALPHA, &info3, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    img4 = pngBind("img/player_skinA.png", PNG_NOMIPMAP, PNG_ALPHA, &info4, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     glutMainLoop();
     return (0);
 }
@@ -348,20 +359,14 @@ void render(void)
         glPopMatrix();
         glColor3f(0.5, 0.5, 0.5);
         glBegin(GL_QUADS);
-            DrawRect(w/2-128, w/2+128, h/2+32, h/2+96);
-            DrawRect(w/2-128, w/2+128, h/2+128, h/2+192);
-            DrawRect(w/2-128, w/2+128, h/2+224, h/2+288);
+            DrawRect(w/4, 3*w/4, h/2+32, h/2+96);
+            DrawRect(w/4, 3*w/4, h/2+128, h/2+192);
+            DrawRect(w/4, 3*w/4, h/2+224, h/2+288);
         glEnd();
         glColor3f(1, 1, 1);
-        glRasterPos2i(w/2-54, h/2+64+12);
-        for (j = 0; j < 9; j++)
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, title_btn1[j]);
-        glRasterPos2i(w/2-42, h/2+160+12);
-        for (j = 0; j < 7; j++)
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, title_btn2[j]);
-        glRasterPos2i(w/2-24, h/2+256+12);
-        for (j = 0; j < 4; j++)
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, title_btn3[j]);
+        render_jstring(w/2-56, h/2+64+12, "続きからはじめる");
+        render_jstring(w/2-56, h/2+160+12, "ワールド新規作成");
+        render_jstring(w/2-56, h/2+256+12, "ゲームを終了する");
         glPopMatrix();
         glPopMatrix();
         glFlush();
@@ -370,12 +375,13 @@ void render(void)
     if (scene == 1)
     {
         int i=0, j=0;
-        char inputseed[30];
-        char back_str[5];
-        char create_str[15];
-        sprintf(inputseed, "INPUT SEED NUMBER (MAX:25)");
-        sprintf(back_str, "Back");
-        sprintf(create_str, "Create World");
+        char seed_info[100];
+        if (seed_length == 0)
+            sprintf(seed_info, "シード文字列: 文字列を入力してください", seed_length);
+        else if (seed_length < 32)
+            sprintf(seed_info, "シード文字列: %2d/32文字を入力", seed_length);
+        else
+            sprintf(seed_info, "シード文字列: これ以上入力できません", seed_length);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -430,35 +436,36 @@ void render(void)
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glPopMatrix();
-        glColor3f(0.5, 0.5, 0.5);
+        glColor3f(0, 0, 0);
         glBegin(GL_QUADS);
             DrawRect(w/4, 3*w/4, h/2-32, h/2+32);
+        glEnd();
+
+        glColor3f(0.5, 0.5, 0.5);
+        glBegin(GL_QUADS);
             DrawRect(w/4, 3*w/4, h/2+64, h/2+128);
             if (seed_length > 0)
                 DrawRect(w/4, 3*w/4, h/2+160, h/2+224);
         glEnd();
-        glColor3f(1, 1, 1);
-        glRasterPos2i(w/2-156, h/2+12);
         if (seed_length == 0)
-        {
-            for (j = 0; j < 26; j++)
-                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, inputseed[j]);
-        }
+            glColor3f(0, 0, 0);
+        else if (seed_length < 32)
+            glColor3f(0, 0.25, 0);
         else
+            glColor3f(0.25, 0, 0);
+        render_jstring(w/4+12, h/2-48, seed_info);
+        glColor3f(1, 1, 1);
+        if (seed_length != 0)
         {
-            glRasterPos2i(w/2-6*seed_length, h/2+12);
+            glRasterPos2i(w/4+12, h/2+12);
             for (j = 0; j < seed_length; j++)
                 glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, seed_str[j]);
+            if (seed_length < 32)
+                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '_');
         }
-        glRasterPos2i(w/2-12, h/2+108);
-        for (j = 0; j < 4; j++)
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, back_str[j]);
+        render_jstring(w/2-56, h/2+108, "タイトルに戻る");
         if (seed_length > 0)
-        {
-            glRasterPos2i(w/2-72, h/2+204);
-            for (j = 0; j <12 ; j++)
-                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, create_str[j]);
-        }
+            render_jstring(w/2-48, h/2+204, "ワールドを作成");
         glPopMatrix();
         glPopMatrix();
         glFlush();
@@ -467,14 +474,25 @@ void render(void)
     else if (scene == 2)
     {
         int i=0, j=0;
-        char sentence[18];
+        char creating_info[100];
         double percentage = (double)(load_counter) / (double)(WORLD_CHUNK*WORLD_CHUNK);
         int per_length = percentage * (double)(w/2);
 
         if (load_counter < WORLD_CHUNK*WORLD_CHUNK)
-            sprintf(sentence, "Creating World ...");
+        {
+            if ((load_counter / 64) % 4 == 0)
+                sprintf(creating_info, "ワールドを生成しています - : %5.2lf%%", 100.0*percentage);
+            else if ((load_counter / 64) % 4 == 1)
+                sprintf(creating_info, "ワールドを生成しています \\ : %5.2lf%%", 100.0*percentage);
+            else if ((load_counter / 64) % 4 == 2)
+                sprintf(creating_info, "ワールドを生成しています | : %5.2lf%%", 100.0*percentage);
+            else
+                sprintf(creating_info, "ワールドを生成しています / : %5.2lf%%", 100.0*percentage);
+        }
         else
-            sprintf(sentence, " Loading World ...");
+        {
+            sprintf(creating_info, "ワールドを読み込んでいます");
+        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -537,10 +555,9 @@ void render(void)
         glBegin(GL_QUADS);
             DrawRect(w/4, w/4+per_length, h/2+32, h/2+96);
         glEnd();
-        glColor3f(1, 1, 1);
-        glRasterPos2i(w/2-108, h/2+12);
-        for (j = 0; j < 18; j++)
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, sentence[j]);
+        glColor3f(0, 0, 0);
+        render_jstring(w*3/8, h/2+72, creating_info);
+
         glPopMatrix();
         glPopMatrix();
         glFlush();
@@ -1070,8 +1087,67 @@ void render(void)
             else
                 sprintf(debug_str[1], "fps: calculating...");
         }
+        sprintf(debug_str[3], "WORLD TICK: %5d", world_tick);
+        if (raining == 0)
+            sprintf(debug_str[4], "WEATHER: SUNNY");
+        else if (raining == 1)
+            sprintf(debug_str[4], "WEATHER: RAINY");
         fps_count++;
-
+        world_tick = (world_tick+1) % 18000;
+        if (world_tick % 750 == 0)
+        {
+            if (raining == 1)
+            {
+                if ((double)rand() / RAND_MAX > 0.5)
+                    raining = 0;
+            }
+            else
+            {
+                if ((double)rand() / RAND_MAX > 0.05)
+                    raining = 1;
+                for (int i=0; i<64; i++)
+                {
+                    rain_x[2*i] = (double)rand() * (double) w / RAND_MAX;
+                    rain_x[2*i + 1] = rain_x[2*i] + 10.0 + (double)rand() * 10.0 / RAND_MAX;
+                    rain_y[2*i] = (double)rand() * (double) h / RAND_MAX;
+                    rain_y[2*i + 1] = rain_y[2*i] + (double)(rain_x[2*i + 1] - rain_x[2*i]) * 4.0;
+                }
+            }
+        }
+        if (raining == 0)
+        {
+            if (world_tick < 3000)
+                glClearColor(0.0, 0.0, 0.0, 1.0);
+            else if (world_tick < 4500)
+                glClearColor(0.0, 0.0, (double)(world_tick-3000) / 3000.0, 1.0);
+            else if (world_tick < 6000)
+                glClearColor((double)(world_tick-4500) / 3000.0, (double)(world_tick-4500) / 1500.0, (double)(world_tick-3000) / 3000.0, 1.0);
+            else if (world_tick < 12000)
+                glClearColor(0.5, 1.0, 1.0, 1.0);
+            else if (world_tick < 13500)
+                glClearColor((world_tick-10500) / 3000.0, (15000-world_tick) / 3000.0, (13500-world_tick) / 1500.0, 1.0);
+            else if (world_tick < 15000)
+                glClearColor((15000-world_tick) / 1500.0, (15000-world_tick) / 3000.0, 0.0, 1.0);
+            else
+                glClearColor(0.0, 0.0, 0.0, 1.0);
+        }
+        else
+        {
+            if (world_tick < 3000)
+                glClearColor(0.0, 0.0, 0.0, 1.0);
+            else if (world_tick < 4500)
+                glClearColor(0.0, 0.0, (double)(world_tick-3000) * 0.5 / 3000.0, 1.0);
+            else if (world_tick < 6000)
+                glClearColor((double)(world_tick-4500) * 0.5 / 3000.0, (double)(world_tick-4500) * 0.5 / 1500.0, (double)(world_tick-3000) * 0.5 / 3000.0, 1.0);
+            else if (world_tick < 12000)
+                glClearColor(0.25, 0.5, 0.5, 1.0);
+            else if (world_tick < 13500)
+                glClearColor((world_tick-10500) * 0.5 / 3000.0, (15000-world_tick) * 0.5 / 3000.0, (13500-world_tick) * 0.5 / 1500.0, 1.0);
+            else if (world_tick < 15000)
+                glClearColor((15000-world_tick) * 0.5 / 1500.0, (15000-world_tick) * 0.5 / 3000.0, 0.0, 1.0);
+            else
+                glClearColor(0.0, 0.0, 0.0, 1.0);
+        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawBuffer(GL_FRONT);
         glMatrixMode(GL_MODELVIEW);
@@ -1085,12 +1161,13 @@ void render(void)
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBegin(GL_QUADS);
-        DrawPlayer();
-        glEnd();
         glPushMatrix();
         glEnable(GL_TEXTURE_2D);
         glColor4ub(255, 255, 255, 255);
+        glBindTexture(GL_TEXTURE_2D, img4);
+        glBegin(GL_QUADS);
+        DrawPlayer();
+        glEnd();
         glBindTexture(GL_TEXTURE_2D, img);
         int dx, dy, dz;
         int draw_xmin, draw_zmin;
@@ -1360,6 +1437,31 @@ void render(void)
         glPushMatrix();
         glLoadIdentity();
         glLineWidth(2.0);
+        for (int i=0; i<64; i++)
+        {
+            int tmp;
+            tmp = rain_x[2*i + 1] + (double) (rain_x[2*i + 1] - rain_x[2*i]) * 0.75;
+            rain_x[2*i] = rain_x[2*i] + (double) (rain_x[2*i + 1] - rain_x[2*i]) * 0.75;
+            rain_x[2*i + 1] = tmp;
+            tmp = rain_y[2*i + 1] + (double) (rain_y[2*i + 1] - rain_y[2*i]) * 0.75;
+            rain_y[2*i] = rain_y[2*i] + (double) (rain_y[2*i + 1] - rain_y[2*i]) * 0.75;
+            rain_y[2*i + 1] = tmp;
+            if (rain_x[2*i] > w || rain_y[2*i] > h)
+            {
+                rain_x[2*i] = (double)rand() * (double) w / RAND_MAX;
+                rain_x[2*i + 1] = rain_x[2*i] + 10.0 + (double)rand() * 10.0 / RAND_MAX;
+                rain_y[2*i] = (double)rand() * (double) h / RAND_MAX;
+                rain_y[2*i + 1] = rain_y[2*i] + (double)(rain_x[2*i + 1] - rain_x[2*i]) * 4.0;
+            }
+        }
+        if (raining == 1)
+        {
+            glColor3f(0.5, 0.5, 1.0);
+            glBegin(GL_LINES);
+            for (int i = 0; i < 64; i++)
+                glVertex2i(rain_x[i], rain_y[i]);
+            glEnd();
+        }
         int itembox_x = w / 2 - 288;
         int itembox_y = h - 128;
         if (pause == 0)
@@ -1515,9 +1617,10 @@ void render(void)
             glVertex2i(w / 2 - 10, h / 2);
             glVertex2i(w / 2 + 10, h / 2);
             glEnd();
+
             if (debug == 1)
             {
-                sprintf(debug_str[0], "C-Craft pre1 (dev-ver)");
+                sprintf(debug_str[0], "C-Craft v1.0");
                 sprintf(debug_str[8], "XYZ: %.2lf %.2lf %.2lf", player_x, player_y, player_z);
                 sprintf(debug_str[9], "BLOCK: %d %d %d", player_block_x, player_block_y, player_block_z);
                 sprintf(debug_str[10], "CHUNK: %d %d %d in %d %d %d", player_local_x, player_local_y, player_local_z, player_chunk_x, player_chunk_y, player_chunk_z);
@@ -1529,7 +1632,29 @@ void render(void)
                 sprintf(debug_str[18], "HIDE HUNGRY POINT: %.1lf", player_hide_hungry);
                 sprintf(debug_str[19], "  NO EATING TIME: %.2lf", no_eating_time);
                 sprintf(debug_str[20], "FULL EATING TIME: %.2lf", full_eating_time);
-                glColor3f(0, 0, 0);
+
+                glColor4f(0.5, 0.5, 0.5, 0.5);
+                glBegin(GL_QUADS);
+                    DrawRect(0, 200, 0+4, 16+4);
+                    DrawRect(0, 175, 16+4, 32+4);
+                    DrawRect(0, 175, 48+4, 64+4);
+                    DrawRect(0, 150, 64+4, 80+4);
+
+                    DrawRect(0, 225, 128+4, 144+4);
+                    DrawRect(0, 175, 144+4, 160+4);
+                    DrawRect(0, 250, 160+4, 176+4);
+
+                    DrawRect(0, 325, 192+4, 208+4);
+                    DrawRect(0, 250, 208+4, 224+4);
+                    DrawRect(0, 250, 224+4, 240+4);
+                    DrawRect(0, 225, 240+4, 256+4);
+
+                    DrawRect(0, 162, 272+4, 288+4);
+                    DrawRect(0, 200, 288+4, 304+4);
+                    DrawRect(0, 200, 304+4, 320+4);
+                    DrawRect(0, 200, 320+4, 336+4);
+                glEnd();
+                glColor3f(1.0, 1.0, 1.0);                
                 for(int i = 0; i <21; i++)
                 {
                     glRasterPos2i(0, 16*i+16);
@@ -1543,12 +1668,6 @@ void render(void)
             int w = glutGet(GLUT_WINDOW_WIDTH);
             int h = glutGet(GLUT_WINDOW_HEIGHT);
             int i=0, j=0;
-            char continue_str[20];
-            char save_str[20];
-            char title_str[20];
-            sprintf(continue_str, "Continue the Game");
-            sprintf(save_str, "Save the Game");
-            sprintf(title_str, "Return to Title");
             glColor4f(0, 0, 0, 0.5);
             glBegin(GL_QUADS);
                 glVertex2i(0, 0);
@@ -1563,15 +1682,9 @@ void render(void)
                 DrawRect(w/4, 3*w/4, h/2+64, h/2+128);
             glEnd();
             glColor3f(1, 1, 1);
-            glRasterPos2i(w/2-108, h/2-84);
-            for (j = 0; j < 18; j++)
-                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, continue_str[j]);
-            glRasterPos2i(w/2-78, h/2+12);
-            for (j = 0; j < 13; j++)
-                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, save_str[j]);
-            glRasterPos2i(w/2-90, h/2+108);
-            for (j = 0; j < 15; j++)
-                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, title_str[j]);
+            render_jstring(w/2-40, h/2-84, "ゲームに戻る");
+            render_jstring(w/2-16, h/2+12, "セーブ");
+            render_jstring(w/2-48, h/2+108, "タイトルに戻る");
         }
         else
         {
@@ -2512,7 +2625,7 @@ void keyboardup(unsigned char c, int x, int y)
     {
         if (c >= 32 && c < 127)
         {
-            if (seed_length < 25)
+            if (seed_length < 32)
             {
                 seed_str[seed_length] = c;
                 seed_length ++;
@@ -2619,7 +2732,7 @@ void mouse(int button, int state, int x, int y)
     {
         int w = glutGet(GLUT_WINDOW_WIDTH);
         int h = glutGet(GLUT_WINDOW_HEIGHT);
-        if (w/2-128 <= x && x < w/2+128 * 9 && h/2+32 <= y && y < h/2+96)
+        if (w/4 <= x && x < w*3/4 && h/2+32 <= y && y < h/2+96)
         {
             LoadItem(player_bag);
             LoadStatus(player_status);
@@ -2634,12 +2747,12 @@ void mouse(int button, int state, int x, int y)
             resporn_player_y = player_y;
             scene = 3;
         }
-        if (w/2-128 <= x && x < w/2+128 * 9 && h/2+128 <= y && y < h/2+192)
+        if (w/4 <= x && x < 3*w/4 && h/2+128 <= y && y < h/2+192)
         {
             scene = 1;
             seed_length = 0;
         }
-        if (w/2-128 <= x && x < w/2+128 * 9 && h/2+224 <= y && y < h/2+288)
+        if (w/4 <= x && x < 3*w/4 && h/2+224 <= y && y < h/2+288)
         {
             exit(1);
         }
@@ -2648,15 +2761,15 @@ void mouse(int button, int state, int x, int y)
     {
         int w = glutGet(GLUT_WINDOW_WIDTH);
         int h = glutGet(GLUT_WINDOW_HEIGHT);
-        if (w/2-128 <= x && x < w/2+128 * 9 && h/2+64 <= y && y < h/2+128)
+        if (w/4 <= x && x < 3*w/4 && h/2+64 <= y && y < h/2+128)
             scene = 0;
-        if (w/2-128 <= x && x < w/2+128 * 9 && h/2+160 <= y && y < h/2+224 && seed_length > 0)
+        if (w/4 <= x && x < 3*w/4 && h/2+160 <= y && y < h/2+224 && seed_length > 0)
         {
             SEED_NUM = 0;
             for(int i=0; i<seed_length; i++)
             {
                 SEED_NUM += seed_str[i];
-                SEED_NUM <<= 2;
+                SEED_NUM ^=  (SEED_NUM << 2);
             }
             scene = 2;
             onechunk1d_y = (double *)malloc(sizeof(double) * 16 * 16);
@@ -4350,13 +4463,17 @@ void DrawPlayer(void)
         {0.0, -0.2625, -0.3375},
         {0.0, -0.2625, 0.3375}
         };
-    double player_model_color_info[6][3] = {
-        {0.0, 0.0, 0.0},
-        {0.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0},
-        {0.0, 1.0, 0.0},
-        {0.0, 1.0, 1.0},
-        {1.0, 0.5, 0.0}
+    double player_model_tex_info[6][24] = {
+        //reg
+        {0.75, 0.0, 1.0, 0.75, 0.75, 0.5, 1.0, 0.75, 0.75, 0.0, 1.0, 0.75, 0.5, 0.0, 0.75, 0.75, 0.25, 0.25, 0.5, 0.5, 0.5, 0, 0.75, 0.75},
+        {0.75, 0.0, 1.0, 0.75, 0.75, 0.5, 1.0, 0.75, 0.5, 0.0, 0.75, 0.75, 0.75, 0.0, 1.0, 0.75, 0.25, 0.25, 0.5, 0.5, 0.5, 0, 0.75, 0.75},
+        // arm
+        {0.25, 0.0, 0.5, 0.75, 0.25, 0.5, 0.5, 0.75, 0.25, 0.0, 0.5, 0.75, 0.25, 0.0, 0.5, 0.75, 0.25, 0.0, 0.5, 0.25, 0.25, 0.0, 0.5, 0.75},
+        {0.25, 0.0, 0.5, 0.75, 0.25, 0.5, 0.5, 0.75, 0.25, 0.0, 0.5, 0.75, 0.25, 0.0, 0.5, 0.75, 0.25, 0.0, 0.5, 0.25, 0.25, 0.0, 0.5, 0.75},
+        //body
+        {0.25, 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 0.25, 0.75, 0.5, 1.0, 0.25, 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5, 0.25, 0.75, 0.5, 1.0},
+        //head
+        {0, 0.25, 0.25, 0.5, 0.0, 0.0, 0.25, 0.25, 0.0, 0.0, 0.25, 0.25, 0.0, 0.25, 0.25, 0.5, 0, 0.75, 0, 1.0, 0.0, 0.5, 0.25, 0.75},
         };
     if (camera_perspective_mode != 0)
     {
@@ -4395,33 +4512,64 @@ void DrawPlayer(void)
                     pfy[j] = player_model_mov_info[i][1] + bfy[j][1];
                     pz[j] = player_model_mov_info[i][2] + bfz[j][1];
                 }
-                pfx[j] = px[j] * cos(xz_rad) - pz[j] * sin(xz_rad);
-                pfz[j] = px[j] * sin(xz_rad) + pz[j] * cos(xz_rad);
+                if (i/2 == 0)
+                {
+                    pfx[j] = px[j] * cos(xz_rad-arm_rad*0.1) - pz[j] * sin(xz_rad-arm_rad*0.1);
+                    pfz[j] = px[j] * sin(xz_rad-arm_rad*0.1) + pz[j] * cos(xz_rad-arm_rad*0.1);
+                }
+                else
+                {
+                    pfx[j] = px[j] * cos(xz_rad+arm_rad*0.1) - pz[j] * sin(xz_rad+arm_rad*0.1);
+                    pfz[j] = px[j] * sin(xz_rad+arm_rad*0.1) + pz[j] * cos(xz_rad+arm_rad*0.1);
+                }
             }
-            glColor3f(player_model_color_info[i][0], player_model_color_info[i][1], player_model_color_info[i][2]);
+            glTexCoord2f(player_model_tex_info[i][2], player_model_tex_info[i][1]);
             glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i][0], player_model_tex_info[i][1]);
             glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i][0], player_model_tex_info[i][3]);
             glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
+            glTexCoord2f(player_model_tex_info[i][2], player_model_tex_info[i][3]);
             glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
+            glTexCoord2f(player_model_tex_info[i][4], player_model_tex_info[i][5]);
             glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
+            glTexCoord2f(player_model_tex_info[i][4], player_model_tex_info[i][7]);
             glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
+            glTexCoord2f(player_model_tex_info[i][6], player_model_tex_info[i][7]);
             glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
+            glTexCoord2f(player_model_tex_info[i][6], player_model_tex_info[i][5]);
             glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
+            glTexCoord2f(player_model_tex_info[i][8], player_model_tex_info[i][9]);
             glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i][8], player_model_tex_info[i][11]);
             glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
+            glTexCoord2f(player_model_tex_info[i][10], player_model_tex_info[i][11]);
             glVertex3f(player_x + pfx[6], player_y + pfy[6], player_z + pfz[6]);
+            glTexCoord2f(player_model_tex_info[i][10], player_model_tex_info[i][9]);
             glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i][12], player_model_tex_info[i][13]);
             glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i][14], player_model_tex_info[i][13]);
             glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i][14], player_model_tex_info[i][15]);
             glVertex3f(player_x + pfx[4], player_y + pfy[4], player_z + pfz[4]);
+            glTexCoord2f(player_model_tex_info[i][12], player_model_tex_info[i][15]);
             glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
+            glTexCoord2f(player_model_tex_info[i][16], player_model_tex_info[i][17]);
             glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i][16], player_model_tex_info[i][19]);
             glVertex3f(player_x + pfx[0], player_y + pfy[0], player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i][18], player_model_tex_info[i][19]);
             glVertex3f(player_x + pfx[2], player_y + pfy[2], player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i][18], player_model_tex_info[i][17]);
             glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i][20], player_model_tex_info[i][21]);
             glVertex3f(player_x + pfx[1], player_y + pfy[1], player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i][20], player_model_tex_info[i][23]);
             glVertex3f(player_x + pfx[5], player_y + pfy[5], player_z + pfz[5]);
+            glTexCoord2f(player_model_tex_info[i][22], player_model_tex_info[i][23]);
             glVertex3f(player_x + pfx[7], player_y + pfy[7], player_z + pfz[7]);
+            glTexCoord2f(player_model_tex_info[i][22], player_model_tex_info[i][21]);
             glVertex3f(player_x + pfx[3], player_y + pfy[3], player_z + pfz[3]);
         }
         for (int i = 0; i < 2; i++)
@@ -4430,35 +4578,58 @@ void DrawPlayer(void)
             {
                 px[j] = player_model_pos_info[i + 1][j % 2];
                 pz[j] = player_model_pos_info[i + 1][4 + j / 2];
-                pfx[j] = px[j] * cos(xz_rad) - pz[j] * sin(xz_rad);
-                pfz[j] = px[j] * sin(xz_rad) + pz[j] * cos(xz_rad);
+                pfx[j] = px[j] * cos(xz_rad+arm_rad*0.1) - pz[j] * sin(xz_rad+arm_rad*0.1);
+                pfz[j] = px[j] * sin(xz_rad+arm_rad*0.1) + pz[j] * cos(xz_rad+arm_rad*0.1);
             }
             py1 = player_model_pos_info[i + 1][2];
             py2 = player_model_pos_info[i + 1][3];
-            glColor3f(player_model_color_info[i + 4][0], player_model_color_info[i + 4][1], player_model_color_info[i + 4][2]);
+            glTexCoord2f(player_model_tex_info[i+4][0], player_model_tex_info[i+4][3]);
             glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i+4][2], player_model_tex_info[i+4][3]);
             glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i+4][2], player_model_tex_info[i+4][1]);
             glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i+4][0], player_model_tex_info[i+4][1]);
             glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i+4][4], player_model_tex_info[i+4][5]);
             glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i+4][4], player_model_tex_info[i+4][7]);
             glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i+4][6], player_model_tex_info[i+4][7]);
             glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i+4][6], player_model_tex_info[i+4][5]);
             glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i+4][8], player_model_tex_info[i+4][11]);
             glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i+4][8], player_model_tex_info[i+4][9]);
             glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i+4][10], player_model_tex_info[i+4][9]);
             glVertex3f(player_x + pfx[2], player_y + py2, player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i+4][10], player_model_tex_info[i+4][11]);
             glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i+4][12], player_model_tex_info[i+4][15]);
             glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i+4][14], player_model_tex_info[i+4][15]);
             glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i+4][14], player_model_tex_info[i+4][13]);
             glVertex3f(player_x + pfx[0], player_y + py2, player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i+4][12], player_model_tex_info[i+4][13]);
             glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i+4][18], player_model_tex_info[i+4][19]);
             glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i+4][18], player_model_tex_info[i+4][17]);
             glVertex3f(player_x + pfx[0], player_y + py1, player_z + pfz[0]);
+            glTexCoord2f(player_model_tex_info[i+4][16], player_model_tex_info[i+4][17]);
             glVertex3f(player_x + pfx[2], player_y + py1, player_z + pfz[2]);
+            glTexCoord2f(player_model_tex_info[i+4][16], player_model_tex_info[i+4][19]);
             glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i+4][20], player_model_tex_info[i+4][23]);
             glVertex3f(player_x + pfx[1], player_y + py1, player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i+4][20], player_model_tex_info[i+4][21]);
             glVertex3f(player_x + pfx[1], player_y + py2, player_z + pfz[1]);
+            glTexCoord2f(player_model_tex_info[i+4][22], player_model_tex_info[i+4][21]);
             glVertex3f(player_x + pfx[3], player_y + py2, player_z + pfz[3]);
+            glTexCoord2f(player_model_tex_info[i+4][22], player_model_tex_info[i+4][23]);
             glVertex3f(player_x + pfx[3], player_y + py1, player_z + pfz[3]);
         }
     }

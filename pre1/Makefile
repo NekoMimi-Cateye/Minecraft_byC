@@ -12,7 +12,7 @@ SRCS = pre.c
 OBJS = ${SRCS:.c=.o}
 
 # ヘッダファイル(*.h)の一覧 (今はなし)
-HEADERS = 
+HEADERS = jfont.h
 
 # コンパイラの設定
 CC = i686-pc-cygwin-gcc
