@@ -1,6 +1,6 @@
-pre.exe
-pre.o
-pre.exe.stackdump
+game.exe
+game.o
+game.exe.stackdump
 TODO.md
 recipetodat.c
 rtd.exe

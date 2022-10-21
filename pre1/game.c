@@ -1103,7 +1103,7 @@ void render(void)
             }
             else
             {
-                if ((double)rand() / RAND_MAX > 0.05)
+                if ((double)rand() / RAND_MAX > 0.75)
                     raining = 1;
                 for (int i=0; i<64; i++)
                 {

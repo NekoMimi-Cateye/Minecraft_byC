@@ -3,10 +3,10 @@
 # 
 
 # 最終目的のファイル
-TARGET = pre.exe
+TARGET = game.exe
 
 # ソースファイルの(*.c)一覧
-SRCS = pre.c
+SRCS = game.c
 
 # オブジェクトファイル(*.o)の一覧
 OBJS = ${SRCS:.c=.o}
