@@ -19,6 +19,10 @@ void SaveChunk(int *, int, int);
 void LoadChunk(int *, int, int);
 void LoadItem(int *);
 void SaveItem(int *);
+void LoadFurnace(void);
+void SaveFurnace(void);
+void LoadPos(void);
+void SavePos(void);
 void SaveStatus(int *);
 void LoadStatus(int *);
 void LoadRecipe22(int *);
@@ -582,14 +586,17 @@ void render(void)
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
-            SaveItem(player_bag);
-            SaveStatus(player_status);
+
             while(*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 2.5)) * 16 + player_local_z) == 0)
             {
                 player_y -= 1.0;
                 player_block_y --;
             }
             resporn_player_y = player_y;
+            SavePos();
+            SaveItem(player_bag);
+            SaveStatus(player_status);
+            SaveFurnace();
             scene = 3;
         }
         load_counter ++;
@@ -670,6 +677,7 @@ void render(void)
                     SaveChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
             SaveItem(player_bag);
             SaveStatus(player_status);
+            SaveFurnace();
             player_pre_chunk_x = player_chunk_x;
             player_pre_loadchunk_x = player_pre_chunk_x - DRAW_DIST;
             player_pre_chunk_z = player_chunk_z;
@@ -781,6 +789,7 @@ void render(void)
             *(player_status + 1) = 18;
             SaveItem(player_bag);
             SaveStatus(player_status);
+            SaveFurnace();
             player_pre_loadchunk_x = 0;
             player_pre_loadchunk_z = 0;
             player_x = resporn_player_x;
@@ -791,6 +800,7 @@ void render(void)
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
                     LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
+            SavePos();
         }
         if (player_hide_hungry > 0)
         {
@@ -2513,7 +2523,7 @@ void render(void)
                 if (dragging_item[1] > 1025 && dragging_item[1] < 1041 && dragging_item[3] < durability_list[dragging_item[1] - 1026])
                 {
                     glColor3f(0.0, 0.0, 0.0);
-                    DrawRect(mouse_x - 24, mouse_x+24, mouse_y - 12, mouse_y+16);
+                    DrawRect(mouse_x - 24, mouse_x+24, mouse_y + 12, mouse_y+16);
                     if (dragging_item[3] >= durability_empty_list[dragging_item[1] - 1026])
                     {
                         durability = (double)(dragging_item[3] - durability_empty_list[dragging_item[1] - 1026]) / (double)(durability_list[dragging_item[1] - 1026] - durability_empty_list[dragging_item[1] - 1026]);
@@ -2528,7 +2538,7 @@ void render(void)
                             green = durability * 2.0;
                         }
                         glColor3f(red, green, 0.0);
-                        DrawRect(mouse_x - 24, mouse_x-24+(int)(48.0 * durability), mouse_y - 12, mouse_y+16);
+                        DrawRect(mouse_x - 24, mouse_x-24+(int)(48.0 * durability), mouse_y + 12, mouse_y+16);
                     }
                 }
                 if (material_item[1] > 1025 && material_item[1] < 1041 && material_item[3] < durability_list[material_item[1] - 1026])
@@ -2734,17 +2744,13 @@ void mouse(int button, int state, int x, int y)
         int h = glutGet(GLUT_WINDOW_HEIGHT);
         if (w/4 <= x && x < w*3/4 && h/2+32 <= y && y < h/2+96)
         {
+            LoadPos();
             LoadItem(player_bag);
+            LoadFurnace();
             LoadStatus(player_status);
             for (int i = 0; i < 2 * DRAW_DIST + 1; i++)
                 for (int j = 0; j < 2 * DRAW_DIST + 1; j++)
-                    LoadChunk(chunk + i * 1114112 + j * 65536, i, j);
-            while(*(chunk + (player_chunk_x - player_pre_loadchunk_x) * 1114112 + (player_chunk_z - player_pre_loadchunk_z) * 65536 + (player_local_x)*4096 + ((int)(player_y - 1.5)) * 16 + player_local_z) == 0)
-            {
-                player_y -= 1.0;
-                player_block_y --;
-            }
-            resporn_player_y = player_y;
+                    LoadChunk(chunk + i * 1114112 + j * 65536, i + player_pre_loadchunk_x, j + player_pre_loadchunk_z);
             scene = 3;
         }
         if (w/4 <= x && x < 3*w/4 && h/2+128 <= y && y < h/2+192)
@@ -3475,8 +3481,10 @@ void mouse(int button, int state, int x, int y)
                     for (int i=0; i<2*DRAW_DIST+1; i++)
                         for (int j=0; j<2*DRAW_DIST+1; j++)
                             SaveChunk(chunk+i*1114112+j*65536, i+player_pre_loadchunk_x, j+player_pre_loadchunk_z);
+                    SavePos();
                     SaveItem(player_bag);
                     SaveStatus(player_status);
+                    SaveFurnace();
                     pause = 1 - pause;
                     menu = 1 - menu;
                 }
@@ -4681,6 +4689,34 @@ void LoadItem(int *bag)
     fclose(f);
 }
 
+void LoadFurnace(void)
+{
+    FILE *f = fopen("data/furnace.dat", "rb");
+    fread(&material_item, sizeof(int), 4, f);
+    fread(&fuel_item, sizeof(int), 4, f);
+    fread(&product_item, sizeof(int), 3, f);
+    fread(&furnace_ope, sizeof(int), 1, f);
+    fread(&furnace_opetime, sizeof(double), 1, f);
+    fread(&furnace_fuelnow, sizeof(double), 1, f);
+    fread(&furnace_fueltime, sizeof(double), 1, f);
+    fread(&furnace_creating, sizeof(int), 1, f);
+    fclose(f);
+}
+
+void SaveFurnace(void)
+{
+    FILE *f = fopen("data/furnace.dat", "wb");
+    fwrite(&material_item, sizeof(int), 4, f);
+    fwrite(&fuel_item, sizeof(int), 4, f);
+    fwrite(&product_item, sizeof(int), 3, f);
+    fwrite(&furnace_ope, sizeof(int), 1, f);
+    fwrite(&furnace_opetime, sizeof(double), 1, f);
+    fwrite(&furnace_fuelnow, sizeof(double), 1, f);
+    fwrite(&furnace_fueltime, sizeof(double), 1, f);
+    fwrite(&furnace_creating, sizeof(int), 1, f);
+    fclose(f);
+}
+
 void LoadRecipe22(int *bag)
 {
     FILE *f = fopen("data/recipe22.dat", "rb");
@@ -4720,6 +4756,56 @@ void LoadStatus(int *status)
     }
     else
         fread(status, sizeof(int), 2, f);
+    fclose(f);
+}
+
+void LoadPos(void)
+{
+    FILE *f = fopen("data/player_pos.dat", "rb");
+    fread(&player_pre_loadchunk_x, sizeof(int), 1, f);
+    fread(&player_pre_loadchunk_z, sizeof(int), 1, f);
+    fread(&player_pre_chunk_x, sizeof(int), 1, f);
+    fread(&player_pre_chunk_z, sizeof(int), 1, f);
+    fread(&player_x, sizeof(double), 1, f);
+    fread(&player_y, sizeof(double), 1, f);
+    fread(&player_z, sizeof(double), 1, f);
+    fread(&player_block_x, sizeof(int), 1, f);
+    fread(&player_block_y, sizeof(int), 1, f);
+    fread(&player_block_z, sizeof(int), 1, f);
+    fread(&player_chunk_x, sizeof(int), 1, f);
+    fread(&player_chunk_y, sizeof(int), 1, f);
+    fread(&player_chunk_z, sizeof(int), 1, f);
+    fread(&player_local_x, sizeof(int), 1, f);
+    fread(&player_local_y, sizeof(int), 1, f);
+    fread(&player_local_z, sizeof(int), 1, f);
+    fread(&player_jump_tick, sizeof(int), 1, f);
+    fread(&player_fall_tick, sizeof(int), 1, f);
+    fread(&player_pre_block_y, sizeof(int), 1, f);
+    fclose(f);
+}
+
+void SavePos(void)
+{
+    FILE *f = fopen("data/player_pos.dat", "wb");
+    fwrite(&player_pre_loadchunk_x, sizeof(int), 1, f);
+    fwrite(&player_pre_loadchunk_z, sizeof(int), 1, f);
+    fwrite(&player_pre_chunk_x, sizeof(int), 1, f);
+    fwrite(&player_pre_chunk_z, sizeof(int), 1, f);
+    fwrite(&player_x, sizeof(double), 1, f);
+    fwrite(&player_y, sizeof(double), 1, f);
+    fwrite(&player_z, sizeof(double), 1, f);
+    fwrite(&player_block_x, sizeof(int), 1, f);
+    fwrite(&player_block_y, sizeof(int), 1, f);
+    fwrite(&player_block_z, sizeof(int), 1, f);
+    fwrite(&player_chunk_x, sizeof(int), 1, f);
+    fwrite(&player_chunk_y, sizeof(int), 1, f);
+    fwrite(&player_chunk_z, sizeof(int), 1, f);
+    fwrite(&player_local_x, sizeof(int), 1, f);
+    fwrite(&player_local_y, sizeof(int), 1, f);
+    fwrite(&player_local_z, sizeof(int), 1, f);
+    fwrite(&player_jump_tick, sizeof(int), 1, f);
+    fwrite(&player_fall_tick, sizeof(int), 1, f);
+    fwrite(&player_pre_block_y, sizeof(int), 1, f);
     fclose(f);
 }
 
